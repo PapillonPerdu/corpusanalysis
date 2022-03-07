@@ -1,15 +1,17 @@
-# # Introduction
+'''Introduction
 
-# Le programme ci-dessous offre quelques fonctions pour l'analyse et la représentation des corrélations entre les textes d'un corpus présentées dans un tableau.
-# pour activer les widgets, exécuter avant le lancement de jupyter :
-# jupyter nbextension enable --py widgetsnbextension --sys-prefix
+ Le programme ci-dessous offre quelques fonctions pour l'analyse et la représentation des corrélations entre les textes d'un corpus présentées dans un tableau.
+ pour activer les widgets, exécuter avant le lancement de jupyter :
+jupyter nbextension enable --py widgetsnbextension --sys-prefix'''
 # # Le programme
 
 from __future__ import print_function
+import os
 import numpy as np
 import pandas as pd
 from sympy import *
 import csv
+import html
 import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
@@ -29,6 +31,7 @@ import ipywidgets as widgets
 from ipywidgets import interact, interactive, fixed, interact_manual, Layout
 from ipywidgets import Layout, Button, Box, FloatText, Textarea, Dropdown, Label, IntSlider
 from IPython.display import display, HTML
+import tabulate
 try:
     from tqdm.notebook import tqdm
 except:
@@ -39,6 +42,256 @@ except:
     print("     vars_base")
     print("     vars_base_first")
 
+# avec l'aide de : https://gitter.im/jupyter/notebook?at=5ccacda23d78aa6c03d0107d
+js = ''' 
+<style>
+.expander {
+    height: 1em;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.expanded {
+    cursor: pointer;
+}
+
+.nbp-textarea{
+text-align:justify;
+hite-space: normal;
+font-size:12pt;
+height: 25em;
+width: 42em;}
+
+</style>
+<script>
+
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#x27;");
+ }
+ 
+ function unescapeHtml(unsafe) {
+    return unsafe
+         .replace(/&amp;/g, "&")
+         .replace(/&lt;/g, "<")
+         .replace(/&gt;/g, ">")
+         .replace(/&quot;/g, '"')
+         .replace(/&#x27;/g, "'");
+ }
+
+function show_citation(nom, variable, value, citation,instanceName){
+    if (citation == '') {citation = 'Pas de citation...';}
+    Jupyter.keyboard_manager.disable();
+    var dialog_body = $('<div/>').append($("<br/>")).append($('<textarea/>').attr('id','citations').addClass('nbp-textarea').text(unescapeHtml(citation)));
+    require(
+        ["base/js/dialog"],
+        function(dialog)
+    {
+        dialog.modal({
+            title: nom + '/' + variable + ' : ' + value,
+            body: dialog_body,
+            sanitize: false,
+             buttons: {
+                            Save: {
+                                class: 'btn-danger',
+                                click: function() {
+                                    var citation = $('#citations')[0].value;
+                                    change_citation(escapeHtml(nom), escapeHtml(variable),escapeHtml( citation), instanceName);
+                                }
+
+                            },
+                            Cancel: {
+                                click: function() {
+                                    Jupyter.keyboard_manager.enable();
+                                }
+
+                            }
+                        }
+        });
+    }
+    );
+}
+
+function click_on_val(event, nom, variable, value, citation, instanceName){
+    var target=event.target;
+    console.info('click_on_val');
+   if (event.shiftKey && event.ctrlKey){
+        change_citation(nom, variable, instanceName);}
+    else if (event.ctrlKey){
+        change_value(nom, variable, value, instanceName,target);}
+    else {
+        show_citation(nom, variable, value, citation,instanceName);}
+    }
+   
+function change_value(nom, variable, value, instanceName,target)
+    {
+        var newVal = prompt("Remplacer " + nom + "/" + variable + " : " + value + " par : ", value);
+    if (newVal != value && newVal !== '' && newVal !== null)
+    {
+        var command = instanceName + ".write_val(\'" + nom + "\',\'" + variable + "\',\'" + newVal + "\')";
+        var kernel = IPython.notebook.kernel;
+        kernel.execute(command);
+        target.innerHTML=newVal}
+    }
+
+function change_citation(nom, variable, citation, instanceName){
+    var command = instanceName + ".write_citation(\'\'\'" + nom + "\'\'\',\'\'\'" + variable+ "\'\'\',\'\'\'" + citation + "\'\'\')";
+    var  kernel = IPython.notebook.kernel;
+    kernel.execute(command);
+    }
+ 
+    
+function show_var_definition(variable, definition,instanceName){
+    if (definition == '') {definition = 'Pas de définition...';}
+    Jupyter.keyboard_manager.disable();
+    var dialog_body = $('<div/>').append(
+                        $("<br/>")
+                    ).append(
+                        $('<textarea/>').attr('id','nbp-var-definition').attr('class','nbp-textarea').text(unescapeHtml(definition))
+                        );
+    require(
+        ["base/js/dialog"],
+        function(dialog)
+    {
+        dialog.modal({
+            title: 'Définition de : ' + variable,
+            body: dialog_body,
+            sanitize: false,
+             buttons: {
+                            'New Var Before' : {
+                                click: function() {
+                                    add_variable(escapeHtml(variable),'before',instanceName);
+                                }
+
+                            },
+                            Save: {
+                                class: 'btn-danger',
+                                click: function() {
+                                    var definition = $('#nbp-var-definition')[0].value;
+                                    change_var_definition( escapeHtml(variable),escapeHtml(definition),instanceName);
+                                }
+
+                            },
+                             'New Var After' : {
+                                click: function() {
+                                    add_variable(escapeHtml(variable),'after',instanceName);
+                                }
+
+                            },
+                            Cancel: {
+                                click: function() {
+                                    Jupyter.keyboard_manager.enable();
+                                }
+
+                            }
+                        }
+        });
+    }
+    );
+}
+
+function change_var_definition(variable, definition, instanceName){
+    var command = instanceName + ".write_var_definition(\'\'\'" + variable + "\'\'\',\'\'\'" + definition + "\'\'\')";
+    var  kernel = IPython.notebook.kernel;
+    console.info(command);
+    kernel.execute(command);
+    }
+    
+
+
+function click_on_var(event, variable, definition, instanceName){
+        show_var_definition(variable, definition, instanceName);  
+}
+
+
+function show_nom_definition(nom, definition,instanceName){
+    if (definition == '') {definition = 'Pas de définition...';}
+    Jupyter.keyboard_manager.disable();
+    var dialog_body = $('<div/>').append(
+                        $("<br/>")
+                    ).append(
+                        $('<textarea/>').attr('id','nbp-nom-definition').attr('class','nbp-textarea').text(unescapeHtml(definition))
+                        );
+    require(
+        ["base/js/dialog"],
+        function(dialog)
+    {
+        dialog.modal({
+            title: 'Définition de : ' + nom,
+            body: dialog_body,
+            sanitize: false,
+             buttons: {
+                            'New Name Before' : {
+                                click: function() {
+                                    add_nom(escapeHtml(nom),'before',instanceName);
+                                }
+
+                            },
+                            Save: {
+                                class: 'btn-danger',
+                                click: function() {
+                                    var definition = $('#nbp-nom-definition')[0].value;
+                                    change_nom_definition(escapeHtml(nom), escapeHtml(definition), instanceName);
+                                }
+
+                            },
+                            'New Name After' : {
+                                click: function() {
+                                    add_nom(escapeHtml(nom),'after',instanceName);
+                                }
+
+                            },
+                            Cancel: {
+                                click: function() {
+                                    Jupyter.keyboard_manager.enable();
+                                }
+
+                            }
+                        }
+        });
+    }
+    );
+}
+
+function change_nom_definition(nom, definition, instanceName){
+    var command = instanceName + ".write_nom_definition(\'\'\'" + nom + "\'\'\',\'\'\'" + definition + "\'\'\')";
+    var  kernel = IPython.notebook.kernel;
+    console.info(command);
+    kernel.execute(command);
+    }
+    
+function add_variable(variable, position, instanceName){
+    newVar = prompt('Nom de la nouvelle variable : ');
+    if (newVar != variable && newVar !== '' && newVar !== null){
+        var command = instanceName + ".add_variable(\'\'\'" + variable + "\'\'\',\'\'\'" + newVar +"\'\'\',\'\'\'" + position + "\'\'\')";
+        var  kernel = IPython.notebook.kernel;
+        console.info(command);
+        kernel.execute(command);}
+    }
+    
+function add_nom(nom, position, instanceName){
+    newNom = prompt('Nouveau nom : ');
+    if (newNom != nom  && newNom !== '' && newNom !== null){
+        var command = instanceName + ".add_nom(\'\'\'" + nom + "\'\'\',\'\'\'" + newNom +"\'\'\',\'\'\'" + position + "\'\'\')";
+        var  kernel = IPython.notebook.kernel;
+        console.info(command);
+        kernel.execute(command);}
+    }
+
+
+function click_on_nom(event, nom, definition, instanceName){
+        show_nom_definition(nom, definition, instanceName);  
+}
+
+
+</script> '''
+display(HTML(js))
+
 
 # source : https://stackoverflow.com/questions/31581425
 def getCombinations(lst, max):
@@ -47,8 +300,8 @@ def getCombinations(lst, max):
             yield list(subset)
 
 
-# test si la liste l contient une liste de la liste M
 def includes(l, M):
+    ''' teste si la liste l contient une liste de la liste M'''
     for m in M :
         if len(set(l) - set(m)) == len(l) - len(m):
             # print(l,' contient un ',M)
@@ -57,8 +310,8 @@ def includes(l, M):
     return False
 
 
-# test si la liste l est contenue dans une liste de la liste M
 def inList(l, M):
+    ''' teste si la liste l est contenue dans une liste de la liste M'''
     for m in M:
         if len(set(m) - set(l)) == len(m) - len(l):
             # print(l,' contient un ',M)
@@ -67,10 +320,10 @@ def inList(l, M):
     return False
 
 
-# entrée : une liste, et une fonction teste sur les éléments de la liste
-# sortie : vrai si tous les éléments de la liste vérifient la condition, faux sinon
-
 def testAll(l, condition):
+    '''
+    entrée : une liste, et une fonction test sur les éléments de la liste
+    sortie : vrai si tous les éléments de la liste vérifient la condition, faux sinon '''
     for x in l:
         if not condition(x):
             return False
@@ -82,55 +335,66 @@ def testAll(l, condition):
 # sortie : vrai si un élément de la liste vérifie la condition, faux sinon
 
 def testOne(l, condition):
-    for x in l:
-        if condition(x):
-            return True
-            break
-    return False
+   for x in l:
+       if condition(x):
+           return True
+           break
+   return False
 
 
 # union d'une liste de listes
 def merge(lists):
-    m = []
-    for l in lists:
-        m += l
-    return m
+   m = []
+   for l in lists:
+       m += l
+   return m
 
 
 def subIntervalles(l, M):
-    for m in M:
-        if l[0] >= m[0] and l[1] <= m[1]:
-            # print(l,' contient un ',M)
-            return True
-    # print(l,' ne contient pas un ',M)
-    return False
+   for m in M:
+       if l[0] >= m[0] and l[1] <= m[1]:
+           # print(l,' contient un ',M)
+           return True
+   # print(l,' ne contient pas un ',M)
+   return False
 
 
 def allEmpty(vals, indexesVars):
-    for n in indexesVars:
-        if not vals[n] == '':
-            return False
-    return True
+   for n in indexesVars:
+       if not vals[n] == '':
+           return False
+   return True
 
 
 def liset(L):
-    liset = [{i} for i in L]
-    return liset
+   liset = [{i} for i in L]
+   return liset
 
 
 class color:
-    purple = '\033[95m'
-    cyan = '\033[96m'
-    darkcyan = '\033[36m'
-    blue = '\033[94m'
-    green = '\033[92m'
-    yellow = '\033[93m'
-    red = '\033[91m'
-    bold = '\033[1m'
-    underline = '\033[4m'
-    end = '\033[0m'
+   purple = '\033[95m'
+   cyan = '\033[96m'
+   darkcyan = '\033[36m'
+   blue = '\033[94m'
+   green = '\033[92m'
+   yellow = '\033[93m'
+   red = '\033[91m'
+   bold = '\033[1m'
+   underline = '\033[4m'
+   end = '\033[0m'
 
+# liste de chaînes dans une liste (extension) vérifiant l'expression régulière regStr
+def strExt(regStr,extension):
+    regStr = '^' + regStr + '$'
+    return [s for s in extension if re.search(regStr, s, re.IGNORECASE)]
 
+# liste de chaînes dans une liste (extension) vérifiant
+# une liste d'expressions régulières regStrs
+def strsExt(regStrs,extension):
+    res = []
+    for regStr in regStrs:
+        res = res + strExt(regStr,extension)
+    return res
 ##########################################################################################
 ### Fonctions lexique
 ######################################################################################
@@ -146,79 +410,76 @@ class color:
 # entrée : texte sous forme d'une chaîne
 # sortie : liste des mots du texte
 def textToWords(text):
-    return re.sub("[^\w]", " ", text).split()
+   return re.sub("[^\w]", " ", text).split()
 
 
 # teste si un mot est dans l'orbite donnée par une identification,
 # pouvant comprendre des expressions régulières
 def inOrbite(word, identification):
-    boole = False
-    idsx = ["^" + id + "$" for id in identification]
-    ids_reg = '|'.join(idsx)
-    if re.match(ids_reg, word):
-        boole = True
-    return boole
+   boole = False
+   idsx = ["^" + id + "$" for id in identification]
+   ids_reg = '|'.join(idsx)
+   if re.match(ids_reg, word):
+       boole = True
+   return boole
 
 
 # entrée : liste de termes identifiés (avec reg exp.)
 # sortie : orbite (relative à une liste de mots).
 def identificationToOrbite(identification, words):
-    orbite = [word for word in words if inOrbite(word, identification)]
-    orbite = list(set(orbite))
-    return orbite
+   orbite = [word for word in words if inOrbite(word, identification)]
+   orbite = list(set(orbite))
+   return orbite
 
 
 # retourne la fréquence totale d'une orbiteFreq (somme des fréquences)
 def orbiteFreqTotal(orbiteFreq):
-    freq = sum([f for w, f in orbiteFreq])
-    return freq
+   freq = sum([f for w, f in orbiteFreq])
+   return freq
 
 
 # Transforme une liste d'orbites en lexiqueFreq
 def orbitesToLexiqueFreq(orbites, words):
-    dictFreq = {word: words.count(word) for word in words}
-    lexiqueFreq = []
-    for orbite in orbites:
-        orbiteFreq = [[word, dictFreq[word]] for word in orbite]
-        lexiqueFreq.append(orbiteFreq)
-    return lexiqueFreq
+   dictFreq = {word: words.count(word) for word in words}
+   lexiqueFreq = []
+   for orbite in orbites:
+       orbiteFreq = [[word, dictFreq[word]] for word in orbite]
+       lexiqueFreq.append(orbiteFreq)
+   return lexiqueFreq
 
 
 # Représentation sous forme de chaîne d'une orbiteFreq
 def orbiteFreqToStr(orbiteFreq):
-    res = ', '.join([str(w) + ' (' + str(f) + ')' for w, f in orbiteFreq])
-    return res
+   res = ', '.join([str(w) + ' (' + str(f) + ')' for w, f in orbiteFreq])
+   return res
 
 
 # Trie un lexiqueFreq
 def sortLexiqueFreq(lexiqueFreq, ordre, reverse):
-    if ordre == 'freq':
-        frequences = [orbiteFreqTotal(orbiteFreq) for orbiteFreq in lexiqueFreq]
-        lexiqueFreq = [orbiteFreq for freq, orbiteFreq in sorted(zip(frequences, lexiqueFreq), reverse=reverse)]
+   if ordre == 'freq':
+       frequences = [orbiteFreqTotal(orbiteFreq) for orbiteFreq in lexiqueFreq]
+       lexiqueFreq = [orbiteFreq for freq, orbiteFreq in sorted(zip(frequences, lexiqueFreq), reverse=reverse)]
 
-    if ordre == 'alpha':
-        lexiqueFreq = sorted(lexiqueFreq, reverse=reverse)
+   if ordre == 'alpha':
+       lexiqueFreq = sorted(lexiqueFreq, reverse=reverse)
 
-    return lexiqueFreq
+   return lexiqueFreq
 
 
 def wordsToOrbites(words, identifications):
-    '''Transforme une liste de mots en une liste d'orbite'''
-    from itertools import groupby
-    words = [w.lower() for w in words]
-    words_uniques = list(set(words))
-
-    # dictionnaire des orbites définies par identification
-    dictOrbites = {str(identification[0]): identificationToOrbite(identification, words_uniques) for identification in
+   '''Transforme une liste de mots en une liste d'orbite'''
+   from itertools import groupby
+   words = [w.lower() for w in words]
+   words_uniques = list(set(words))
+   # dictionnaire des orbites définies par identification
+   dictOrbites = {str(identification[0]): identificationToOrbite(identification, words_uniques) for identification in
                    identifications}
-
-    # liste des mots dans une orbites
-    motsInOrbites = list(set(merge(list(dictOrbites.values()))))
-    representants = list(dictOrbites.keys())
-
-    # Substitution du représentant aux mots identifiés
-    orbites = []
-    for word in words_uniques:
+   # liste des mots dans une orbites
+   motsInOrbites = list(set(merge(list(dictOrbites.values()))))
+   representants = list(dictOrbites.keys())
+   # Substitution du représentant aux mots identifiés
+   orbites = []
+   for word in words_uniques:
         if word in representants:
             # word est le représentant d'une identification. On enregistre son orbite
             orbites.append(dictOrbites[word])
@@ -228,15 +489,14 @@ def wordsToOrbites(words, identifications):
                 # si word est dans une orbite, on ne l'enregistre pas dans le lexique
                 # sinon, on enregistre son orbite réduite à lui-même
                 orbites.append([word])
+        return orbites
 
-    return orbites
 
-
-# Réduction de la liste des orbites
-# conditions sur :
-# -- la longueur des mots
-# -- mots exclus
-# -- mots forcés
+''' Réduction de la liste des orbites
+conditions sur :
+ -- la longueur des mots
+ -- mots exclus
+ -- mots forcés'''
 def orbitesReduction(orbites, mots, motSauf, min, max):
     def minmax(x):
         return (min <= len(x) <= max or x in mots)
@@ -307,7 +567,7 @@ nomsDonnes_layout = Layout(flex='0 1 auto', height='40px', width='400px')
 
 
 class Correlations:
-    """Classe pour l'analyse d'un tableau de variables
+    '''Classe pour l'analyse d'un tableau de variables
 
     :fileIn : nom du fichier csv contenant les données
     :baseName : chaîne qui sera ajoutée aux noms des données dans les sorties
@@ -332,12 +592,22 @@ class Correlations:
     find : liste des noms ayant pour le critère j la valeur donnée
     contains : liste des noms ayant contenant pour le critère j la chaîne donnée
     like : listes des noms ayant pour le critère j la même valeur que celle du nom donné
-     """
+     '''
 
     def __init__(self,
-                 fileIn, baseName = '', varsTypes = [], nomsTypes = [],
-                 varsTypesRegles = '', nomsTypesRegles = ''):
+                 fileIn, baseName = '',
+                 varsTypes = [], varsDefs=[],
+                 nomsTypes = [],varsNoms=[],
+                 varsTypesRegles = '', nomsTypesRegles = '',nomsDefs=[],
+                 citations=[],instance=''):
         self.__baseName = baseName
+        if instance == '':
+            instance = input('Nom donné à l\'instance  : ')
+            if instance == '' :
+                print("Vous devez indiquer le nom de l'instance.")
+                sys.exit(1)
+
+        self.instanceName = instance
         # Pour que les lignes des tableaux ne soient pas tronquées
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
@@ -350,6 +620,8 @@ class Correlations:
         noms = []
         variables = []
         poids = []
+        files = []  # liste des adresses des fichiers des variables
+        varsToIndexesFiles = {}  # dictionnaire : var:index fichier
         for f in fileIn:
             try:
                 ar = np.array(pd.read_csv(open(f,encoding="UTF-8"), delimiter=","))
@@ -357,7 +629,7 @@ class Correlations:
                 print("Impossible d\'ouvrir le fichier \"" + f + "\"")
                 sys.exit(1)
 
-                # Suppression des colonnes (resp. lignes) dont le nom est vide
+            # Suppression des colonnes (resp. lignes) dont le nom est vide
             j = 1
             while j < np.size(ar, 1):
                 if str(ar[1, j]) == 'nan':
@@ -374,26 +646,49 @@ class Correlations:
             if not len(frames):
                 noms = ar[2:, 0].tolist()
 
-            variables += ar[1, 1:].tolist()
-            poids += ar[0, 1:].tolist()
+            newVars = ar[1, 1:].tolist()
+            indexFile = len(files)
+            varsToIndexesFiles.update({v: indexFile for v in newVars})
+            files.append(f)
+            variables += newVars
             frames.append(pd.DataFrame(ar[2:, 1:]).replace(np.nan, ''))
 
         self.__array = pd.concat(frames, axis=1, join='inner')
         data = np.array(self.__array)
+        self.__data = data
+        self.__selectedData = data
+
 
         variables = [str(x) for x in variables]
         self.__vars = variables
         self.__selectedVars = variables
         self.__selectedIndexesVars = [i for i in range(len(self.__selectedVars))]
 
-        # initialisation des types de variables
-        if varsTypes: self.set_vars_types(varsTypes, varsTypesRegles = varsTypesRegles)
+        self.__varsToIndexesFiles = varsToIndexesFiles
+        self.__files = files
 
-        try:
-            poids = list(map(int, poids))
-        except:
-            poids = [1] * (len(variables))
-            print("Les poids ont tous été fixés à 1.")
+        # initialisation des types de variables
+        if varsTypes:
+            self.set_vars_types(varsTypes, varsTypesRegles = varsTypesRegles)
+            self.__varsTypes_exists = True
+        else:
+            self.__varsTypes_exists = False
+
+        # initialisation des définitions des variables
+        if varsDefs:
+            self.set_vars_defs(varsDefs)
+            self.__varsDefs_exists = True
+        else :
+            self.__varsDefs_exists = False
+
+        self.__vars_augmented = self.vars_augmented(self.__vars)
+
+
+
+        #try:
+            #poids = list(map(int, poids))
+        #except:
+        poids = [1] * (len(variables))
         self.__poids = poids
         self.__selectedPoids = poids
 
@@ -402,11 +697,36 @@ class Correlations:
         self.__selectedNoms = noms
         self.__selectedIndexesNoms = [i for i in range(len(self.__selectedNoms))]
 
-        # initialisation des types de noms
-        if nomsTypes: self.set_noms_types(nomsTypes, nomsTypesRegles = nomsTypesRegles)
+        # initialisation des citations associées aux variables
+        if citations:
+            self.set_citations(citations)
+            self.__citations_exists = True
+        else:
+            self.__data_augmented = self.__data
+            self.__citations_exists = False
 
-        self.__data = data
-        self.__selectedData = data
+        # initialisation des définitions des noms
+        if nomsDefs:
+            self.set_noms_defs(nomsDefs)
+            self.__nomsDefs_exists = True
+        else:
+            self.__nomsDefs_exists = False
+            self.__noms_augmented = self.__noms
+
+        # initialisation des types de noms
+        if nomsTypes:
+            self.set_noms_types(nomsTypes, nomsTypesRegles = nomsTypesRegles)
+            self.__nomsTypes_exists = True
+        else:
+            self.__nomsTypes_exists = False
+
+        # tableau des valeurs avec les fonctionnalités associées
+        data_augmented = []
+        for n in range(len(self.__noms)):
+            line = [self.value_augmented(self.__data[n][v], n, v) for v in range(len(self.__vars))]
+            data_augmented.append(line)
+        self.__data_augmented = data_augmented
+
 
         self.__card = len(self.__data)
         self.__selectedCard = len(self.__selectedData)
@@ -414,7 +734,9 @@ class Correlations:
         self.__distMax = sum(self.__poids)
         self.__selectedDistMax = sum(self.__selectedPoids)
 
-        self.__exclus = ['','*', '?', '#']
+        self.__nuls = ['', ' ','  ','-','?'] #valeurs manquantes
+        self.__exclus =['','  ','   ','-','*', '?', '#']
+        self.__notStrict = ['', '  ', '   ', '-', '*', '?', '#', '0']
         self.__coches = ['*', '#', '-']
         self.__logicalOperatorsBinary = ['|', '&']
         self.__logicalOperatorsUnary = ['~']
@@ -447,6 +769,8 @@ class Correlations:
         self.__gmc_label_posX = .1
         self.__gmc_label_posY = .1
 
+        self.show_dashboard()
+
     ##########################################################################################
     ### Méthodes communes
     ######################################################################################
@@ -470,7 +794,10 @@ class Correlations:
 
     @property
     def print(self):
-        print(pd.DataFrame(self.__data, columns=self.__vars, index=self.__noms))
+        df=pd.DataFrame(self.__data, columns=self.__vars_augmented,
+                        index=self.__noms_augmented)
+        #print(df)
+        return HTML(df.to_html(escape=False))
 
     @property
     def data(self):
@@ -480,8 +807,10 @@ class Correlations:
                   noms=None, nomSauf=None, vars=None, varSauf=None,
                   varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
                   nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
-                  pasColonne=10, pasLigne=10):
-
+                  pasColonne=10, pasLigne=10, domaine = 'all', corpus = 'all'):
+        """
+        Affiche le tableau des valeurs pour les noms et variables sélectionnés
+        """
         if nomsTypeSauf is None:
             nomsTypeSauf = []
         if nomsTypes is None:
@@ -500,10 +829,13 @@ class Correlations:
             noms = []
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesNomsVars = self.corpusdomaine(corpus,domaine,indexesNoms,indexesVars)
+        indexesVars=indexesNomsVars[1]
+        indexesNoms=indexesNomsVars[0]
 
-        lines = [[self.__data[i][k] for k in indexesVars] for i in indexesNoms]
-        resNoms = [self.__noms[i] for i in indexesNoms]
-        resVars = [self.__vars[i] for i in indexesVars]
+        lines = [[self.__data_augmented[i][k] for k in indexesVars] for i in indexesNoms]
+        resNoms = [self.__noms_augmented[i] for i in indexesNoms]
+        resVars = [self.__vars_augmented[i] for i in indexesVars]
 
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, resVars, resNoms)
@@ -517,7 +849,8 @@ class Correlations:
 
         print('Variables : ' + str(len(indexesVars)))
         df = pd.DataFrame(lines, columns=resVars, index=resNoms)
-        display(df)
+        #display(df)
+        display(HTML(df.to_html(escape=False)))
         # return pd.DataFrame(self.__data, columns=self.__vars, index=self.__noms)
 
     @property
@@ -532,8 +865,9 @@ class Correlations:
                   noms=[], nomSauf=[], nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
 
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
-        listNoms = ['Noms'] + [self.__noms[n] for n in indexesNoms]
-        display(pd.DataFrame(columns=listNoms))
+        listNoms = ['Noms'] + [self.__noms_augmented[n] for n in indexesNoms]
+        df=pd.DataFrame(columns=listNoms)
+        display(HTML(df.to_html(escape=False)))
 
     @property
     def noms(self, noms=[]):
@@ -557,8 +891,8 @@ class Correlations:
         return self.__vars
 
     def get_vars(self,
-                  vars=[], varSauf=[],
-                  varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+                 vars=[], varSauf=[],
+                 varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
 
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         listVars = [self.__vars[v] for v in indexesVars]
@@ -567,11 +901,16 @@ class Correlations:
     def show_vars(self,
                   vars=[], varSauf=[],
                   varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+        """
+        Tableau des variables sélectionnées
+        """
 
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
-        listVars = ['Variables'] + [self.__vars[v] for v in indexesVars]
+        listVars = ['Variables'] + [self.__vars_augmented[v] for v in indexesVars]
         print('Variables : ' + str(len(indexesVars)))
-        display(pd.DataFrame(columns=listVars))
+        df=pd.DataFrame(columns=listVars)
+        #display(df)
+        display(HTML(df.to_html(escape=False)))
 
     @property
     def selectedVars(self):
@@ -590,11 +929,25 @@ class Correlations:
         self.show_selectedVars
 
     @property
+    def vars_augmented(self):
+        return self.__vars_augmented
+
+    @property
+    def citations(self):
+        return self.__citations
+
+    @property
     def selectedDistMax(self):
         return self.__selectedDistMax
 
     def indexToVar(self, num):
         return self.__vars[num]
+
+    def indexToVar_augmented(self, num):
+        return self.var_augmented(self.__vars[num])
+
+    def indexToNom_augmented(self, num):
+        return self.nom_augmented(self.__noms[num])
 
     def indexToNom(self, num):
         return self.__noms[num]
@@ -696,6 +1049,9 @@ class Correlations:
             return self.__noms[index1:index2]
 
     def nomsApres(self, nom):
+        """
+        Liste des noms venant après le nom donné (nom compris).
+        """
         try:
             index = self.__noms.index(nom)
             return self.__noms[index:len(self.__noms)]
@@ -703,6 +1059,9 @@ class Correlations:
             print("Le nom \"" + nom + "\" n'est pas reconnu")
 
     def nomsApresStrict(self, nom):
+        """
+        Liste des noms venant après le nom donné (nom exclu).
+        """
         try:
             index = self.__noms.index(nom)
             return self.__noms[index + 1:len(self.__noms)]
@@ -710,6 +1069,9 @@ class Correlations:
             print("Le nom \"" + nom + "\" n'est pas reconnu")
 
     def nomsAvant(self, nom):
+        """
+        Liste des noms venant avant le nom donné (nom compris).
+        """
         try:
             indexNom = self.nomToIndex(nom)
             return self.__noms[0:indexNom + 1]
@@ -717,6 +1079,9 @@ class Correlations:
             print("Le nom \"" + nom + "\" n'est pas reconnu")
 
     def nomsAvantStrict(self, nom):
+        """
+        Liste des noms venant avant le nom donné (nom exclu).
+        """
         try:
             indexNom = self.nomToIndex(nom)
             return self.__noms[0:indexNom]
@@ -769,9 +1134,219 @@ class Correlations:
     def card(self):
         print(self.__card)
 
-    # variables pour lesquelles une édition a une vraie valeur (i.e. n'a pas une valeur exclue)
+    # indexes des variables ayant des valeurs sur tous les indexes de vars et de noms considérés
+    def indexesDomaine(self, indexesVars, indexesNoms):
+        indexesNotDomaine = [v for v in indexesVars for n in indexesNoms if self.__data[n][v] in self.__nuls]
+        indexesDomaine=sorted(list(set(indexesVars)-set(indexesNotDomaine)))
+        return indexesDomaine
+
+    # variables ayant des valeurs sur les vars et noms considérés
+    def domaine(self, vars=[], noms=[]):
+        indexesVars = self.varsToIndexesVars(vars)
+        indexesNoms = self.nomsToIndexesNoms(noms)
+        domaine = [self.__vars[v] for v in self.indexesDomaine(indexesVars,indexesNoms)]
+        return domaine
+
+    def show_domaine(self, vars=[], varSauf=[],
+                    varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                    noms=[], nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        vars = self.indexesToVars_augmented(
+            self.indexesDomaine(indexesVars,indexesNoms))
+        df = pd.DataFrame(columns=vars)
+        display(HTML(df.to_html(escape=False)))
+
+    # indexes des noms ayant des valeurs pour sur tous les indexes de vars et de noms considérés
+    def indexesCorpus(self, indexesVars, indexesNoms):
+        indexesNotCorpus = [n for n in indexesNoms for i in indexesVars if self.__data[n][i] in self.__nuls]
+        indexesCorpus=sorted(list(set(indexesNoms)-set(indexesNotCorpus)))
+        return indexesCorpus
+
+    # noms ayant des valeurs sur tous les  vars et noms considérés
+    def corpus(self, vars=[], varSauf=[],
+                    varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                    noms=[], nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        corpus = [self.__noms[n] for n in self.indexesCorpus(indexesVars, indexesNoms)]
+        return corpus
+
+    def show_corpus(self, vars=[], varSauf=[],
+                        varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                        noms=[], nomSauf=[],
+                        nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        noms = self.indexesToNoms_augmented(self.indexesCorpus(indexesVars,indexesNoms))
+        df = pd.DataFrame(columns=noms)
+        display(HTML(df.to_html(escape=False)))
+
+    def indexesVars_manquantes(self, indexNom,indexesVars):
+        """
+        indexes des variables sans valeur d'une édition donnée parmi des indexes donnés
+        """
+        manquantes = [i for i in indexesVars if self.__data[indexNom][i] in self.__nuls]
+        return manquantes
+
+    # variables sans valeur d'une édition
+    def show_vars_manquantes(self, nom,
+                             vars=[], varSauf=[],
+                             varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+        """
+        Tableau des variables sans valeur pour le nom donné.
+        :param nom:
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :return:  Tableau des variables sans valeur pour le nom donné.
+        """
+
+        indexNom = self.nomToIndex( nom)
+        indexesVars = self.getIndexesVars( vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesVarsManque = self.varsManquantes( indexesVars, indexNom)
+        varsManque = [self.indexToVar_augmented(v) for v in indexesVarsManque]
+        line = [self.__data_augmented[indexNom][v] for v in indexesVarsManque]
+        if varsManque:
+            print('Valeurs manquantes pour ' + nom + ' : ' + str(len(varsManque)))
+            df = pd.DataFrame([line], index=[self.nom_augmented(nom)], columns=varsManque)
+            display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + 'Aucune variable sans valeur pour le nom \"' + nom + '\".')
+
+
+
+    def show_types_vars_manquants(self):
+        """
+        :return: types de variables non assignés
+        """
+        resTypes = [t for t in self.__vars_types_types if not self.typeToVars(t)]
+        if resTypes:
+            df = pd.DataFrame(index=resTypes)
+            print(color.bold + "Types de variables non assignés :" + color.end)
+            return display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + "Tous les types sont assignés à des variables." + color.end)
+
+    def indexesVarsTypes_manquants(self, indexesVars):
+        """
+        :param indexNom:
+        :param indexesVars:
+        :return: indexes des variables sans types
+        """
+        manquantes = [v for v in indexesVars if not self.indexVarToTypes(v)]
+        return manquantes
+
+    def show_vars_types_manquants(self,
+                             vars=[], varSauf=[],
+                             varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+        """
+        :param nom:
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :return: affiche les variables sans types
+        """
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        resVars = [self.__vars_augmented[i] for i in self.indexesVarsTypes_manquants(indexesVars)]
+        if resVars:
+            df = pd.DataFrame(columns=resVars)
+            print(color.bold + "Variables sans types : " + color.end)
+            return display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + "Toutes les variables ont un type." + color.end)
+
+
+    def indexesNomsTypes_manquants(self, indexesNoms):
+        """
+        :param indexesNoms:
+        :return: indexes des noms sans types
+        """
+        manquants = [n for n in indexesNoms if not self.indexNomToTypes(n)]
+        return manquants
+
+    def show_noms_types_manquants(self,
+                             noms=[], nomSauf=[],
+                             nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+        """
+        :param noms:
+        :param nomSauf:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :return: affiche les noms sans types
+        """
+
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        resNoms = [self.__noms_augmented[i] for i in self.indexesNomsTypes_manquants(indexesNoms)]
+        if resNoms:
+            df = pd.DataFrame(index=resNoms)
+            print(color.bold + "Noms sans types : " + color.end)
+            return display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + "Tous les noms ont un type." + color.end)
+
+    # noms n'ayant pas de valeur pour certaine variables
+    def show_noms_manquants(self,
+                             vars=[], varSauf=[],
+                             varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                            noms=[],nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[],nomsTypesFormule=[]):
+        """
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :param noms:
+        :param nomSauf:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :return: noms n'ayant pas de valeur pour certaine variables
+        """
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesCorpus=self.indexesCorpus(indexesVars,indexesNoms)
+        indexesNomsManquants=list(set(indexesNoms) - set(indexesCorpus))
+
+        indexesDomaine = self.indexesDomaine(indexesVars, indexesNoms)
+        indexesVarsManquantes=sorted(list(set(indexesVars) - set(indexesDomaine)))
+        if indexesVarsManquantes :
+            print(color.bold + "Noms pour lesquels une variable n'a pas de valeur : " +str(len(indexesNomsManquants))+ color.end)
+            data_manquent=[]
+            for n in range(len(indexesNomsManquants)) :
+                line=[]
+                for v in range(len(indexesVarsManquantes)):
+                    if self.__data[indexesNomsManquants[n]][indexesVarsManquantes[v]] in self.__nuls :
+                        line.append('x')
+                    else:
+                        line.append('')
+                data_manquent.append(line)
+
+            df = pd.DataFrame(data_manquent,
+                              columns=self.indexesToVars(indexesVarsManquantes),
+                              index=self.indexesToNoms(indexesNomsManquants))
+            display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + "Aucun des noms n'a de variable sans valeur : " +  color.end)
+
     def indexesVarsDefiniesNom(self,
                                indexNom, indexesVars):
+        """
+        :param indexNom:
+        :param indexesVars:
+        :return: indexes des variables pour lesquelles un nom, donné par son index, a une vraie valeur (i.e. n'a pas une valeur exclue)
+        """
+
         trueVars = [i for i in indexesVars if not self.__data[indexNom][i] in self.__exclus]
         return trueVars
 
@@ -784,6 +1359,15 @@ class Correlations:
 
         trueVars = sorted(list(set(trueVars)))
         return trueVars
+
+    #vars définies d'une édition
+    def vars_definies(self,nom,
+                             vars=[], varSauf=[],
+                           varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        n=self.nomToIndex(nom)
+        resVars=[self.__vars[v] for v in indexesVars if not self.__data[n][v] in self.__exclus ]
+        return resVars
 
     # nombre de variables pour lesquelles l'édition a une vraie valeur (i.e. n'a pas une valeur exclue)
     def totalVarsNom(self,
@@ -811,6 +1395,7 @@ class Correlations:
     # ont des valeurs définies
     def indexesVarsDefiniesConjointes(self,
                                       indexNom1, indexNom2, indexesVars):
+
         indexesVarsDef = []
         for i in indexesVars:
             if self.__data[indexNom1][i] not in self.__exclus and \
@@ -837,8 +1422,72 @@ class Correlations:
             sum += self.__poids[v]
         return sum
 
+    def corpusdomaine(self, corpus, domaine, indexesNoms, indexesVars):
+        '''
+        :param self:
+        :param domaine: valeur du domaine
+        :param corpus: valeur du corpus
+        :param indexesVars:
+        :param indexesNoms:
+        :return: (indexesNoms,indexesVars) satisfying the values of domaine and corpus
+        '''
+        # domaine = 0 pas de restriction
+        # domaine = 1 : les valeurs en sont pas nulles
+        # domaine = 2 : les valeurs doivent être positivement définies
+
+        if domaine == "defined":
+            testDomaine = self.__nuls
+            testBoole = False
+        elif domaine == "positif":
+            testDomaine = self.__exclus
+            testBoole = False
+        elif domaine == "strict" :
+            testDomaine = self.__notStrict
+            testBoole = False
+        elif domaine == "null":
+            testDomaine = self.__nuls
+            testBoole = True
+        else:
+            domaine = "all"
+            testBoole = False
+
+        if corpus == "defined":
+            testCorpus = self.__nuls
+            testBoole = False
+        elif corpus == "positif":
+            testCorpus = self.__exclus
+            testBoole = False
+        elif corpus == 'strict':
+            testCorpus = self.__notStrict
+            testBoole = False
+        elif corpus == 'null':
+            testCorpus = self.__nuls
+            testBoole = True
+        else:
+            corpus = "all"
+            testBoole = False
+
+        if not domaine == 'all' or not corpus == 'all':
+            indexesNomsRed = []
+            for n in indexesNoms:
+                booleCorpus = True
+                indexesVarsRed = []
+                for v in indexesVars:
+                    if domaine == "all" or (self.__data[n][v] in testDomaine) == testBoole:
+                        indexesVarsRed.append(v)
+                        if not corpus == "all" and not (self.__data[n][v] in testCorpus) == testBoole:
+                            booleCorpus = False
+
+                if booleCorpus:
+                    indexesNomsRed.append(n)
+                indexesVars = indexesVarsRed
+
+            return [indexesNomsRed, indexesVarsRed]
+        else:
+            return [indexesNoms, indexesVars]
+
     def varsToIndexesVars(self,
-                          listVars, listVarSauf):
+                          listVars, listVarSauf=[]):
         indexesVars = []
         if type(listVars) == int:
             try:
@@ -847,6 +1496,8 @@ class Correlations:
                 print(color.bold + "La variable n°", listVars, " n'est pas reconnue." + color.end)
                 sys.exit(1)
             listVars = [v]
+
+        if listVars == []:listVars=self.__vars
 
         if type(listVars) == str:
             try:
@@ -862,12 +1513,29 @@ class Correlations:
             indexesVars = sorted(list(set(indexesVars)))
         return indexesVars
 
+
+
+    # liste des variables vérifiant une liste de regVar
+    def varsExt(self, regVars):
+        return strsExt(regVars,self.__vars)
+
+    # liste des noms vérifiant une liste de regVar
+    def nomsExt(self, regNoms):
+        return strsExt(regNoms,self.__noms)
+
+    # liste des types de variables vérifiants une liste de regTypes
+    def varsTypesExt(self, regTypes):
+        return strsExt(regTypes, self.__vars_types_types)
+
+    # liste des types de variables vérifiants une liste de regTypes
+    def nomsTypesExt(self, regTypes):
+        return strsExt(regTypes, self.__noms_types_types)
+
     # détermination d'indexesVars à partir de
     # vars,varSauf,varsTypes,varsTypeSauf,varsTypesFormule
     def getIndexesVarsStrict(self,
-                       vars=[], varSauf=[],
-                       varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
-
+                             vars=[], varSauf=[],
+                             varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
         varsT = []
         if varsTypesFormule:
             varsT = self.varsTypesFormulaToVars('self.typeToIndexesVars', varsTypesFormule)
@@ -895,15 +1563,19 @@ class Correlations:
             varSauf = varsTSauf
 
         indexesVars = self.varsToIndexesVars(vars, varSauf)
-
         return indexesVars
 
     def getIndexesVars(self,
                        vars=[], varSauf=[],
                        varsTypes=[], varsTypeSauf=[], varsTypesFormule='') :
 
+        vars = self.varsExt(vars)
+        varSauf = self.varsExt(varSauf)
+        if varsTypes: varsTypes = varsTypesExt(self, varsTypes)
+        if varsTypeSauf: varsTypeSauf = varsTypesExt(self, varsTypeSauf)
+
         indexesVars = self.getIndexesVarsStrict(vars=vars, varSauf=varSauf,
-                       varsTypes=varsTypes, varsTypeSauf=varsTypeSauf, varsTypesFormule=varsTypesFormule)
+                                                varsTypes=varsTypes, varsTypeSauf=varsTypeSauf, varsTypesFormule=varsTypesFormule)
 
         if not indexesVars :
             indexesVars=[i for i in range(len(self.__vars))]
@@ -913,6 +1585,11 @@ class Correlations:
     def getIndexesNoms(self,
                        noms, nomSauf,
                        nomsTypes, nomsTypeSauf, nomsTypesFormule):
+
+        if noms: noms=self.nomsExt(noms)
+        if nomSauf: nomSauf=self.nomsExt(nomSauf)
+        if nomsTypes: nomsTypes=self.nomsTypesExt(nomsTypes)
+        if nomsTypeSauf: nomsTypeSauf=self.nomsTypesExt(nomsTypeSauf)
 
         nomsT = []
         if nomsTypesFormule:
@@ -926,7 +1603,7 @@ class Correlations:
 
         if noms:
             if nomsT:
-                noms = list(set(noms).intersection(set(nomsT)))
+                noms = list(set(self.noms).intersection(set(nomsT)))
         else:
             noms = nomsT
 
@@ -945,7 +1622,7 @@ class Correlations:
         return indexesNoms
 
     def nomsToIndexesNoms(self,
-                          listNoms, listNomSauf):
+                          listNoms, listNomSauf=[]):
         if type(listNoms) == str:
             try:
                 n = self.__noms.index(listNoms)
@@ -1048,6 +1725,28 @@ class Correlations:
     def totalVars(self, indexNom, indexesVars):
         trueVars = [i for i in indexesVars if not self.__data[indexNom][i] in self.__exclus]
         return len(trueVars)
+
+    def equalVals(self, indexNom, indexesVars, values):
+        '''
+
+        :param indexNom:
+        :param indexesVars:
+        :param values:
+        :return: [percentage of values of indexNom equal to values, ['' if equal, value if different]]
+        '''
+
+        total = 0
+        diff = []
+        for i in range(len(indexesVars)):
+            if self.__data[indexNom][indexesVars[i]] == values[i]:
+                diff.append('')
+                total += 1
+            else:
+                diff.append(self.__data[indexNom][indexesVars[i]])
+        prc = round(total / len(indexesVars) * 100)
+        res = [prc, diff]
+        return res
+    
 
     # NON UTILISE
     # fonction de calcul de la proximité
@@ -1181,13 +1880,14 @@ class Correlations:
         while i < len(columns):
             columns.insert(i, '')
             for j in range(len(index)):
-                data[j].insert(i, index[j])
+                data[j].insert(i, "<b>"+index[j]+"</b>")
             i += pas + 1
         return [data, columns]
 
     # répète la ligne de critères pour un pas donné
     def repeteColumns(self, pas, data, columns, index):
         i = pas
+        columns=["<b>"+c+"</b>" for c in columns]
         while i < len(index):
             index.insert(i, '')
             data.insert(i, columns)
@@ -1230,11 +1930,11 @@ class Correlations:
                         print('\"'+color.bold+ssType+color.end+'\" dans la règle de \"'+color.bold+types[indexType]+color.end+'\" n\'est pas un type reconnu.')
 
                     if testssType :
-                        for i in range(len(self.__vars)) :
+                        for i in range(len(data[0])) :
                             if data[indexType][i] != '':
-                                    if (data[index_ssType][i] == '' and neg == False) or (
-                                            data[index_ssType][i] != '' and neg == True):
-                                        data[index_ssType][i] = '*'
+                                if (data[index_ssType][i] == '' and neg == False) or (
+                                        data[index_ssType][i] != '' and neg == True):
+                                    data[index_ssType][i] = '*'
 
         return data
 
@@ -1243,6 +1943,9 @@ class Correlations:
         if type(fileIn) == str: fileIn = [fileIn]
         fr = pd.DataFrame([])
         types=[]
+        files=[]
+        varsToIndexesVarsTypesFiles = {}  # dictionnaire : var:index fichier des types des variables
+
         for f in fileIn:
             try:
                 ar = np.array(pd.read_csv(open(f,encoding="UTF-8"), delimiter=","))
@@ -1264,12 +1967,20 @@ class Correlations:
                     i += 1
 
             index = ar[1:, 0].tolist()
+            newVars = ar[0, 1:].tolist()
             cols = ar[0, 1:].tolist()
-            ar=ar[1:,1:]
-            fr_new = pd.DataFrame(ar, index=index, columns=cols)
+            ar = ar[1:, 1:]
+
+            indexVarsTypesFile = len(files)
+            varsToIndexesVarsTypesFiles.update({v: indexVarsTypesFile for v in newVars})
+            files.append(f)
+
+            fr_new = pd.DataFrame(ar, index = index, columns = cols)
             fr = pd.concat([fr_new, fr], axis=1)
-            #pour préserver l'ordre des types
+            # pour préserver l'ordre des types
             types = types + [str(x) for x in index if x not in types]
+
+
 
         #remplace les nan par des ''
         fr = pd.DataFrame(fr).replace(np.nan, '')
@@ -1315,6 +2026,8 @@ class Correlations:
         self.__vars_types_data = ar.tolist()
         self.__vars_types_vars = fr.columns.tolist()
         self.__vars_types_types = [tp for tp in types if not tp == '']
+        self.__varsToIndexesVarsTypesFiles = varsToIndexesVarsTypesFiles
+        self.__varsTypesFiles = files
 
 
         # application des règles
@@ -1340,13 +2053,245 @@ class Correlations:
                                                       regles)
 
 
-        # nombre de valeurs d'une liste différentes de ''
+    def show_dashboard(self):
+        columns = ['<b>Names</b>','<b>Variables</b>']
+        index = ['Number','<b>Defined</b>','<b>Not defined</b>', '<b>Types</b>']
+
+        lineNumber = [len(self.__noms), len(self.__vars)]
+        lineDefined = [len(self.__noms) - len(self.__noms_sans_def), len(self.__vars) - len(self.__vars_sans_def) ]
+        lineNotDefined = [ len(self.__noms_sans_def), len(self.__vars_sans_def) ]
+        lineTypes = [len(self.__noms_types_types), len(self.__vars_types_types)]
+
+        lines=[lineNumber, lineDefined, lineNotDefined, lineTypes]
+
+        df = pd.DataFrame(lines, columns = columns, index = index)
+        display(HTML(df.to_html(escape=False)))
+
+    # initialisation des vars de définition :
+    # vars_defs_dic : dictionnaire var : def
+    # vars_augmented : liste des variables formatée avec la définition
+    #vars_sans_def : liste des variables sans définition
+    def set_vars_defs(self, fileIn):
+        if type(fileIn) == str: fileIn = [fileIn]
+        fr = pd.DataFrame([])
+        files=[]
+        varsToIndexesVarsDefsFiles = {}  # dictionnaire : var:index fichier des définitions des variables
+
+        for f in fileIn:
+            try:
+                ar = np.array(pd.read_csv(open(f,encoding="UTF-8"), delimiter=","))
+                #print(ar)
+            except:
+                print("Impossible d\'ouvrir le fichier des définitions \"" + f + "\"")
+                #sys.exit(1)
+
+            # Suppression des colonnes (resp. lignes) dont le nom est vide
+            j = 1
+            while j < np.size(ar, 1):
+                if str(ar[1, j]) == 'nan':
+                    ar = np.delete(ar, j, 1)
+                else:
+                    j += 1
+
+            # variables ayant une définition
+            self.__vars_defs_vars = [str(ar[1, i]) for i in
+                                             range(len(ar[1, 0:])) if str(ar[2, i]) != 'nan' ]
+            newVars = ar[1, 1:].tolist()
+            indexVarsDefsFile = len(files)
+            varsToIndexesVarsDefsFiles.update({v: indexVarsDefsFile for v in newVars})
+            files.append(f)
+            cols = newVars
+            index=['Définition']
+            ar = ar[2:, 1:]
+            fr_new = pd.DataFrame(ar, index=index,columns=cols)
+            fr = pd.concat([fr_new, fr], axis=1)
+
+        #remplace les nan par des ''
+        fr = pd.DataFrame(fr).replace(np.nan, '')
+
+        variables = [str(x) for x in fr.columns.tolist()]
+
+        defs=[str(x)  if  str(x)!='nan' else '' for x in ar[0, 0:].tolist()]
+
+        #variables sans déf (=absentes du tableau des defs) et variables définies non reconnues
+        varsDefsError = sorted(list(set(variables) - set(self.__vars)))
+        varSansDef = sorted(list(set(self.__vars) - set(variables)))
+
+        if varsDefsError:
+            print('')
+            print('')
+            print(color.bold + str(len(varsDefsError))+' variables définies non reconnues : ' + color.end)
+            display(pd.DataFrame(columns=varsDefsError))
+
+        if varSansDef:
+            print('')
+            print('')
+            print(color.bold  + str(len(varSansDef))+ ' variables non définies : ' + color.end)
+            display(pd.DataFrame(columns=varSansDef))
+
+        #if varsDefsError or varSansDef : sys.exit(1)
+
+        # L'ensemble des variables des tableaux de valeurs et des défs coïncident
+        #contrôle des doublons
+
+        if len(variables) != len(set(self.__vars)):
+            print(color.bold + 'Variables ayant le même nom :' + color.end)
+            doubles = [item for item, count in collections.Counter(variables).items() if count > 1]
+            print('')
+            print(','.join(map(str, doubles)))
+            #sys.exit(1)
+
+        #réordonnement des variables des défs
+        #fr = fr[self.__vars]
+        #réordonnement des défs
+        #fr = fr.reindex(index=defs)
+
+
+        # dictionnaire : var:def pour les variables ayant une définition
+        varsDefsDicPart = {variables[i]: defs[i] for i in range(len(variables))}
+        # dictionnaire : var:def pour toutes les variables définies
+        self.__vars_defs_dic = {v: (varsDefsDicPart[v] if v in varsDefsDicPart else '') for v in self.__vars}
+        self.__vars_sans_def=[v for v in self.__vars if self.__vars_defs_dic[v] == '' ]
+        self.__varsToIndexesVarsDefsFiles = varsToIndexesVarsDefsFiles
+        self.__varsDefsFiles = files
+
+
+    # initialisation des définitions des nom :
+    # noms_defs : liste des définitions des noms
+    def set_noms_defs(self, fileIn):
+        if type(fileIn) == str: fileIn = [fileIn]
+        fr = pd.DataFrame([])
+        files = []
+        nomsToIndexesNomsDefsFiles = {}  # dictionnaire : var:index fichier des définitions des noms
+
+        for f in fileIn:
+            try:
+                ar = np.array(pd.read_csv(open(f, encoding="UTF-8"), delimiter=","))
+                # print(ar)
+            except:
+                print("Impossible d\'ouvrir le fichier des définitions des noms \"" + f + "\"")
+                sys.exit(1)
+
+            # Suppression des lignes dont le nom est vides
+            i = 2
+            while i < np.size(ar, 0):
+                if str(ar[i, 0]) == 'nan':
+                    ar = np.delete(ar, i, 0)
+                else:
+                    i += 1
+
+            # noms ayant une définition
+            self.__noms_defs_noms = [str(ar[i, 0]) for i in
+                                     range(len(ar[0:, 0])) if str(ar[i, 1]) != 'nan']
+            newNoms = ar[2:, 0].tolist()
+            indexNomsDefsFile = len(files)
+            nomsToIndexesNomsDefsFiles.update({v: indexNomsDefsFile for v in newNoms})
+            files.append(f)
+
+            index = newNoms
+            cols = ['Définition']
+            num_rows, num_cols = ar.shape
+            if num_cols >=4 and ar[1,2] == 'Thamous table' and ar[1,3] == 'Thamous id' and ar[1,4] == 'Thamous projet':
+                thamous = True
+                cols+=['Thamous table','Thamous id', 'Thamous projet']
+                ar=ar[2:,1:5]
+            else:
+                thamous = False
+                ar=ar[2:,1]
+            fr_new = pd.DataFrame(ar, index=index, columns=cols)
+            fr = pd.concat([fr_new, fr], axis=1)
+
+
+        # remplace les nan par des ''
+        fr = pd.DataFrame(fr).replace(np.nan, '')
+
+        noms = [str(x) for x in fr.index.tolist()]
+        if thamous:
+            defs = [str(x) if str(x) != 'nan' else '' for x in ar[0:, 0].tolist()]
+            tables = [str(x) if str(x) != 'nan' else '' for x in ar[0:,1].tolist()]
+            ids = [str(x) if str(x) != 'nan' else '' for x in ar[0:, 2].tolist()]
+            prjts  = [str(x) if str(x) != 'nan' else '' for x in ar[0:, 3].tolist()]
+        else:
+            defs = [str(x) if str(x) != 'nan' else '' for x in ar[0:].tolist()]
+        # noms sans déf (=absentes du tableau des defs) et noms définis non reconnues
+        nomsDefsError = sorted(list(set(noms) - set(self.__noms)))
+        nomSansDef = sorted(list(set(self.__noms) - set(noms)))
+
+        if nomsDefsError:
+            print('')
+            print('')
+            print(color.bold + str(len(nomsDefsError)) + ' noms définis non reconnus : ' + color.end)
+            display(pd.DataFrame(columns=nomsDefsError))
+
+        if nomSansDef:
+            print('')
+            print('')
+            print(color.bold + str(len(nomSansDef)) + ' noms non définis : ' + color.end)
+            display(pd.DataFrame(columns=nomSansDef))
+
+        # if varsDefsError or varSansDef : sys.exit(1)
+
+        # L'ensemble des noms des tableaux de valeurs et des défs coïncident
+        # contrôle des doublons
+
+        if len(noms) != len(set(self.__noms)):
+            print(color.bold + 'Noms identiques :' + color.end)
+            doubles = [item for item, count in collections.Counter(noms).items() if count > 1]
+            print('')
+            print(','.join(map(str, doubles)))
+            # sys.exit(1)
+
+        # réordonnement des variables des défs
+        # fr = fr[self.__vars]
+        # réordonnement des défs
+        # fr = fr.reindex(index=defs)
+
+        # dictionnaire : nom:def pour les noms ayant une définition
+        nomsDefsDicPart = {noms[i]: defs[i] for i in range(len(noms))}
+        if thamous:
+            nomsTablesDicPart = {noms[i]: tables[i] for i in range(len(noms))}
+            nomsIdsDicPart = {noms[i]: ids[i] for i in range(len(noms))}
+            nomsPrjtsDicPart = {noms[i]: prjts[i] for i in range(len(noms))}
+        # dictionnaire : var:def pour toutes les variables définies
+        self.__noms_defs_dic = {v: (nomsDefsDicPart[v] if v in nomsDefsDicPart else '') for v in self.__noms}
+        if thamous:
+            self.__noms_tables_dic = {v: (nomsTablesDicPart[v] if v in nomsTablesDicPart else '') for v in self.__noms}
+            self.__noms_ids_dic = {v: (nomsIdsDicPart[v] if v in nomsIdsDicPart else '') for v in self.__noms}
+            self.__noms_prjts_dic = {v: (nomsPrjtsDicPart[v] if v in nomsPrjtsDicPart else '') for v in self.__noms}
+
+        self.__noms_augmented = self.noms_augmented(self.__noms)
+        self.__noms_sans_def = [n for n in self.__noms if self.__noms_defs_dic[n] == '']
+        self.__nomsToIndexesNomsDefsFiles = nomsToIndexesNomsDefsFiles
+        self.__nomsDefsFiles = files
+
+    # Affiche les variables et leur définition
+    def show_vars_defs(self,vars=None, varSauf=None,
+                       varsTypes=None, varsTypeSauf=None, varsTypesFormule=''):
+
+        if varsTypeSauf is None:
+            varsTypeSauf = []
+        if varsTypes is None:
+            varsTypes = []
+        if varSauf is None:
+            varSauf = []
+        if vars is None:
+            vars = []
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+
+        print(color.bold + 'Tableau des définitions des variables : ' + color.end)
+
+        headers = [self.__vars[i] for i in indexesVars]
+        lines=[[self.__vars_defs_dic[self.__vars[i]] for i in indexesVars]]
+
+        #display(pd.DataFrame(lines, columns=columns, index=['Définition : ']))
+        display(HTML(tabulate.tabulate(lines,headers=headers, stralign='left',colalign='left',  tablefmt='html')))
 
     def show_vars_types(self,types = [], pasColonne=0,pasLigne=0):
         print(color.bold + 'Tableau des types de variables : ' + color.end)
 
 
-        columns = self.__vars_types_vars
+        columns = self.vars_augmented(self.__vars_types_vars)
         if types :
             indexesTypes = self.varsTypesToIndexesTypes(types, [])
             index = types
@@ -1365,7 +2310,107 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
+    # initialisation des citations associées aux valeurs :
+    # values_defs : liste des définitions
+    # vars_defs_pop : liste des variables avec popup contenant la définition
+
+    def set_citations(self, fileIn):
+        if type(fileIn) == str: fileIn = [fileIn]
+        frames = []
+        vars_citations = []
+        noms_citations = []
+        filesCitations = []  # liste des adresses des fichiers des citations
+        varsToIndexesFilesCitations = {}  # dictionnaire : var:index fichier
+        for f in fileIn:
+            try:
+                ar = np.array(pd.read_csv(open(f,encoding="UTF-8"), delimiter=","))
+            except:
+                print("Impossible d\'ouvrir le fichier de citations \"" + f + "\"")
+                sys.exit(1)
+
+            # Suppression des colonnes (resp. lignes) dont le nom est vide
+            j = 1
+            while j < np.size(ar, 1):
+                if str(ar[1, j]) == 'nan':
+                    ar = np.delete(ar, j, 1)
+                else:
+                    j += 1
+            i = 2
+            while i < np.size(ar, 0):
+                if str(ar[i, 0]) == 'nan':
+                    ar = np.delete(ar, i, 0)
+                else:
+                    i += 1
+
+            newVarsCitations = ar[1, 1:].tolist()
+            indexFile = len(filesCitations)
+            vars_citations += newVarsCitations
+            varsToIndexesFilesCitations.update({v: indexFile for v in newVarsCitations})
+            filesCitations.append(f)
+            if not len(frames):
+                noms_citations = ar[2:, 0].tolist()
+
+            frames.append(pd.DataFrame(ar[2:, 1:]).replace(np.nan, ''))
+
+        self.__array = pd.concat(frames, axis=1, join='inner')
+        data_cit = np.array(self.__array)
+
+        vars_citations = [str(x) for x in vars_citations]
+
+        self.__varsToIndexesFilesCitations = varsToIndexesFilesCitations
+        self.__filesCitations = filesCitations
+
+        # variables avec citation non reconnues
+        varsCitationsError = sorted(list(set(vars_citations) - set(self.__vars)))
+
+        if varsCitationsError:
+            print('')
+            print('')
+            print(color.bold + str(len(varsCitationsError)) + ' variables avec citation non reconnues : ' + color.end)
+            display(pd.DataFrame(columns=varsCitationsError))
+            sys.exit(1)
+
+
+
+        # Les variables avec citations existent bien
+        # contrôle des doublons
+
+        if len(vars_citations) != len(set(vars_citations)):
+            print(color.bold + 'Variables des citations ayant le même nom :' + color.end)
+            doubles = [item for item, count in collections.Counter(vars_citations).items() if count > 1]
+            print('')
+            print(','.join(map(str, doubles)))
+            sys.exit(1)
+
+        line=['']*len(self.__vars)
+        cit=[line]*len(self.__noms)
+        #copie de self.__data dans data_citations
+        #tableau vide pour les citations
+        citations=[]
+        for n in range(len(self.__noms)) :
+            line=[]
+            empty=[]
+            for v in range(len(self.__vars)):
+                line.append(self.__data[n][v])
+                empty.append('')
+            citations.append(empty)
+
+
+        for nn in range(len(noms_citations)) :
+            for vv in range(len(vars_citations)):
+                n=self.__noms.index(noms_citations[nn])
+                v=self.__vars.index(vars_citations[vv])
+                val=self.__data[n][v]
+                citations[n][v] = data_cit[nn][vv]
+        self.__citations = citations
+
+
+    def show_citations(self):
+        df = pd.DataFrame(self.__citations, columns=self.__vars_augmented,index=self.__noms_augmented)
+        display(HTML(df.to_html(escape=False)))
 
 
     def totalNotNull(self, l):
@@ -1404,6 +2449,10 @@ class Correlations:
 
 
     def varToTypes(self, var):
+        """
+        :param var:
+        :return: types d'une variables
+        """
         tps = [tp for tp in self.__vars_types_types if var in self.typeToVars(tp)]
         return tps
 
@@ -1418,13 +2467,15 @@ class Correlations:
         types = self.varToTypes(var)
         typesL = [[tp] for tp in types]
 
-        display(pd.DataFrame(typesL, columns=[var]))
+        df=pd.DataFrame(typesL, columns=[self.var_augmented(var)])
+        display(HTML(df.to_html(escape=False)))
 
     # variables d'un type donné
     def show_vars_type(self, tp):
-        varsT = self.typeToVars(tp)
+        varsT = self.vars_augmented(self.typeToVars(tp))
         print('Variables : ' + str(len(varsT)))
-        display(pd.DataFrame(columns=[tp + ':'] + varsT))
+        df=pd.DataFrame(columns=[tp + ':'] + varsT)
+        display(HTML(df.to_html(escape=False)))
 
     def indexVarToTypes(self, indexVar):
         return self.varToTypes(self.__vars[indexVar])
@@ -1471,10 +2522,10 @@ class Correlations:
         return indexesVars
 
     ## Doublon
-        # def typeToIndexesVars(self,
-        #                  tp, indexesVars):
-        # indexesVarsType = [v for v in indexesVars if v in self.typeToIndexesVars(tp)]
-        # return indexesVarsType
+    # def typeToIndexesVars(self,
+    #                  tp, indexesVars):
+    # indexesVarsType = [v for v in indexesVars if v in self.typeToIndexesVars(tp)]
+    # return indexesVarsType
 
     def indexTypeToIndexesVars(self, indexType):
 
@@ -1532,6 +2583,103 @@ class Correlations:
     def indexesVarsToVals(self, indexesNoms, indexesVars):
         values = [str(self.__data[n][v]) for v in indexesVars for n in indexesNoms]
         return sorted(values)
+
+    def value_augmented(self, value, indexNom, indexVar):
+        nom = self.__noms[indexNom]
+        var = self.__vars[indexVar]
+        try:
+            citation = self.__citations[indexNom][indexVar]
+        except:
+            citation=''
+        if str(value).strip() == '':
+            value = '-'
+        htm = "<a id=\'nbp-" + str(indexNom) + '-' + str(indexVar) + "\' style=\"color:black;cursor:pointer;\" " \
+                " onmouseup=\"click_on_val(event,\'" + html.escape(str(nom).replace("'", "&#x27;")) + \
+              "\',\'" + html.escape(str(var).replace("'", "&#x27;")) + "\',\'" + value + "\',\'" + \
+              html.escape(str(citation).replace("'", "&#x27;")) + "\',\'" + \
+              self.instanceName + "\');\" >" + value + "</a>"
+        return htm
+
+    def var_augmented(self,var):
+        if self.__varsDefs_exists:
+            definition = self.__vars_defs_dic[var]
+            if str(var).strip() == '':
+                value = '-'
+            return "<a style=\"color:black;cursor:pointer;\" " \
+                   "title=\""+html.escape(str(definition).replace("'", "&#x27;")).replace('\n','&#10;')+"\" "\
+                 "onmouseup=\"click_on_var(event," \
+                                           "\'"+html.escape(str(var).replace("'", "&#x27;"))+"\',\'" + \
+                                         html.escape(str(definition).replace("'", "&#x27;")) + "\',\'" + \
+                                        self.instanceName +"\');\">"+var+"</a>"
+        else:
+            return "<a style=\"color:black;cursor:pointer;\" " \
+               "onmouseup=\"add_variable(\'"+html.escape(str(var).replace("'", "&#x27;"))+"\',\'after\',\'"+ \
+                                       self.instanceName +"\');\">"+var+"</a>"
+
+
+    def nom_augmented(self,nom):
+        definition = self.__noms_defs_dic[nom]
+        try:
+            table = self.__noms_tables_dic[nom]
+            id = self.__noms_ids_dic[nom]
+            prjt = self.__noms_prjts_dic[nom]
+        except : id = 0
+
+        try:
+            nomAug= "<a style=\"color:black;cursor:pointer;\" " \
+                   "title=\"" + html.escape(str(definition)).replace('\n', '&#10;') + "\" " \
+                    "onmouseup=\"click_on_nom(event,\'" + html.escape(
+                str(nom).replace("'", "&#x27;")) + "\',\'" + \
+                   html.escape(str(definition).replace("'", "&#x27;")) + "\',\'" + \
+                   self.instanceName + "\');\">" + nom + "</a>"
+            if id:
+                thm="<sup ><small><a href='https://thamous.univ-rennes1.fr/php/form_ref.php?id_ref="+id+"&table=t"+table+"&projet="+prjt+" target='_blank' style='color:black; text-decoration: none'>Thm</a>" \
+                        "  <a href='https://thamous.univ-rennes1.fr/php/navigation_liens_invariante.php?id_origine="+id+"&table_origine=t"+table+"&projet="+prjt+"&type_liens=Tous' target='_blank' style='color:black; text-decoration: none'>&harr;</a></small></sup>"
+                nomAug+=thm
+            return nomAug
+
+        except:
+            return nom
+
+    def varsDef(self, str,
+                vars=[], varSauf=[],
+               varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+
+        vars=[self.__vars[v] for v in indexesVars if str in self.__vars_defs_dic[self.__vars[v]]]
+
+        return vars
+
+    def nomsDef(self, str,
+                noms=[], nomSauf=[],
+                nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+
+        noms=[self.__noms[n] for n in indexesNoms if str in self.__noms_defs_dic[self.__noms[n]]]
+
+        return noms
+
+    #transforme une liste de vars en une liste de vars avec leur déf.
+    def vars_augmented(self,vars):
+        return [self.var_augmented(v) for v in vars]
+
+    # transforme une liste de noms en une liste de noms avec leur déf.
+    def noms_augmented(self, noms):
+        return [self.nom_augmented(n) for n in noms]
+
+    def indexesToVars_augmented(self, indexesVars):
+        return [self.var_augmented(self.__vars[v]) for v in indexesVars]
+
+    def indexesToNoms_augmented(self, indexesNoms):
+        return [self.nom_augmented(self.__noms[n]) for n in indexesNoms]
+
+    def indexesToVars(self, indexesVars):
+        return [self.__vars[v] for v in indexesVars]
+
+    def indexesToNoms(self, indexesNoms):
+        return [self.__noms[n] for n in indexesNoms]
 
     # retourne la liste des valeurs (avec répétition) d'une édition
     # sur les variables d'un même type
@@ -1598,12 +2746,27 @@ class Correlations:
             redLines.append(redLine)
         return redLines
 
-    # Affiche  le nombres de valeurs égales d'une liste d'éditions
-    # sur les variables indiquées
+
     def show_coherence(self, noms=None, nomSauf=None, vars=None, varSauf=None,
-                                varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
-                                nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
-                                pasColonne=10, pasLigne=10):
+                       varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
+                       nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
+                       pasColonne=10, pasLigne=10):
+        """
+
+        :param noms:
+        :param nomSauf:
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :param pasColonne:
+        :param pasLigne:
+        :return: Tableau donnant  le nombres de valeurs égales d'une liste de noms sur les variables indiquées
+        """
 
         if nomsTypeSauf is None:
             nomsTypeSauf = []
@@ -1624,7 +2787,7 @@ class Correlations:
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
 
-        resNoms = [self.__noms[i] for i in indexesNoms]
+        resNoms = [self.__noms_augmented[i] for i in indexesNoms]
         valuesCompletes = self.indexesVarsToVals(indexesNoms, indexesVars)
 
         total = len(indexesVars)
@@ -1638,17 +2801,20 @@ class Correlations:
                 cardValues.append(card)
             lines.append(cardValues)
 
-        listVars = ['Variables'] + [self.__vars[v] for v in indexesVars]
+        listVars = ['Variables'] + [self.__vars_augmented[v] for v in indexesVars]
         print('Variables : ' + str(len(indexesVars)))
-        display(pd.DataFrame(columns=listVars))
-        display(pd.DataFrame(lines, columns=valsCompletes, index=resNoms))
+        df1=pd.DataFrame(columns=listVars)
+        display(HTML(df1.to_html(escape=False)))
+        df=pd.DataFrame(lines, columns=valsCompletes, index=resNoms)
+        display(HTML(df.to_html(escape=False)))
+
 
         # Affiche  le pourcentage de valeurs égales d'une liste d'éditions
         # sur les variables indiquées
     def show_coherence_pourcent(self, noms=None, nomSauf=None, vars=None, varSauf=None,
-                  varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
-                  nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
-                  pasColonne=10, pasLigne=10) :
+                                varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
+                                nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
+                                pasColonne=10, pasLigne=10) :
 
         if nomsTypeSauf is None:
             nomsTypeSauf = []
@@ -1669,7 +2835,7 @@ class Correlations:
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
 
-        resNoms = [self.__noms[i] for i in indexesNoms]
+        resNoms = [self.__noms_augmented[i] for i in indexesNoms]
         valuesCompletes = self.indexesVarsToVals(indexesNoms,indexesVars)
 
         total = len(indexesVars)
@@ -1683,10 +2849,13 @@ class Correlations:
                 pourcent.append(round(card / total * 100))
             lines.append(pourcent)
 
-        listVars = ['Variables'] + [self.__vars[v] for v in indexesVars]
+        listVars = ['Variables'] + [self.__vars_augmented[v] for v in indexesVars]
         print('Variables : ' + str(len(indexesVars)))
-        display(pd.DataFrame(columns=listVars))
-        display(pd.DataFrame(lines, columns=valsCompletes, index=resNoms))
+        df1=pd.DataFrame(columns=listVars)
+        display(HTML(df1.to_html(escape=False)))
+        df=pd.DataFrame(lines, columns=valsCompletes, index=resNoms)
+        display(HTML(df.to_html(escape=False)))
+
 
     # Affiche le nombre et le pourcentages de valeurs égales d'une édition
     # sur les variables d'un même type
@@ -1712,6 +2881,515 @@ class Correlations:
             self.show_coherence_type(nom, tp)
 
     ##########################################################################################
+    ## Ajout d'une variable
+    ##########################################################################################
+
+
+    def add_variable_in_csv_variables(self, indexVar, newVar, position):
+        #ajout de la variable dans le tableau des variables
+        file = self.__files[self.__varsToIndexesFiles[self.__vars[indexVar]]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+        var = self.__vars[indexVar]
+
+        if position == 'before':
+            incr = 0
+        else:
+            incr = 1
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    indexVarcsv=row.index(var)
+                    row.insert(indexVarcsv+incr,newVar)
+                elif i > 2 :
+                    row.insert(indexVarcsv+incr,'')
+                else:
+                    row.insert(0, '')
+                writer.writerow(row)
+                i = i + 1
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_variable_in_csv_variables_definitions(self, indexVar, newVar, position):
+        # ajout de la variable dans le tableau des variables
+        file = self.__varsDefsFiles[self.__varsToIndexesVarsDefsFiles[self.__vars[indexVar]]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+
+        if position == 'before':
+            incr = 1
+        else:
+            incr = 2
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    row.insert(indexVar + incr, newVar)
+                else:
+                    row.insert(indexVar + incr, '')
+                writer.writerow(row)
+                i = i + 1
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier des définitions des variables \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_variable_in_csv_variables_types(self, indexVar, newVar, position):
+        # ajout de la variable dans le tableau des variables
+        file = self.__varsTypesFiles[self.__varsToIndexesVarsTypesFiles[self.__vars[indexVar]]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+        var = self.__vars[indexVar]
+
+        if position == 'before':
+            incr = 0
+        else:
+            incr = 1
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 1:  # ligne des variables dans le fichier des types
+                    indexVarcsv = row.index(var)
+                    row.insert(indexVarcsv + incr, newVar)
+                elif i > 2:
+                    row.insert(indexVarcsv + incr, '')
+                else:
+                    row.insert(0, '')
+                writer.writerow(row)
+                i = i + 1
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_variable_in_csv_citations(self, indexVar, newVar, position):
+        # ajout de la variable dans le tableau des variables
+        file = self.__filesCitations[self.__varsToIndexesFilesCitations[self.__vars[indexVar]]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+
+        var = self.__vars[indexVar]
+
+        if position == 'before':
+            incr = 0
+        else:
+            incr = 1
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    indexVarcsv = row.index(var)
+                    row.insert(indexVarcsv + incr, newVar)
+                elif i > 2:
+                    row.insert(indexVarcsv + incr, '')
+                else:
+                    row.insert(0, '')
+                writer.writerow(row)
+                i = i + 1
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+
+    def add_variable(self, var, newVar, position='after'):
+        indexVar = self.__vars.index(var)
+
+        if newVar in self.__vars :
+            print(color.red + "La variable \"" + newVar + "\" existe déjà." + color.end)
+            sys.exit(1)
+
+
+        if position == 'before':
+            incr = 0
+        else:
+            incr = 1
+
+        # ajout de la variable dans le tableau des variables
+        self.add_variable_in_csv_variables(indexVar, newVar, position)
+
+        if self.__varsDefs_exists:
+            # ajout de la variable dans le tableau des définitions des variables
+            self.add_variable_in_csv_variables_definitions(indexVar, newVar, position)
+
+        if self.__varsTypes_exists:
+            # ajout de la variable dans le tableau des types
+            self.add_variable_in_csv_variables_types(indexVar, newVar, position)
+
+        if self.__citations_exists:
+            # ajout de la variable dans le tableau des citations
+            self.add_variable_in_csv_citations(indexVar, newVar, position)
+
+
+        # mise à jour des variables
+        self.__vars.insert(indexVar + incr, newVar)
+
+        # mise à jour du tableau des données
+        newCol = [''] * len(self.__noms)
+        self.__data = np.insert(self.__data, indexVar + incr, newCol, axis=1)
+
+
+        # mise à jour du tableau des citations
+        if self.__citations_exists:
+            self.__citations = np.insert(self.__citations, indexVar + incr, newCol, axis=1)
+
+        # mise à jour du tableau des définitions des variables
+        if self.__varsDefs_exists:
+            self.__vars_defs_dic[newVar]=''
+            #variables asyant une définition
+            self.__vars_defs_vars.insert(indexVar + incr, newVar)
+
+        self.__vars_augmented.insert(indexVar + incr, self.var_augmented(newVar))
+
+        newColAugmented = [self.value_augmented('', n, indexVar + incr) for n in range(len(self.__noms))]
+        self.__data_augmented = np.insert(self.__data_augmented, indexVar + incr, newColAugmented, axis=1)
+
+
+        if self.__varsTypes_exists:
+            newColTypes = [''] * len(self.__vars_types_types)
+            self.__vars_types_data = np.insert(self.__vars_types_data, indexVar + incr, newColTypes, axis=1)
+
+        #mise à jour des correspondance avec les fichiers csv
+        self.__varsToIndexesFiles[newVar] = self.__varsToIndexesFiles[var]
+        if self.__varsDefs_exists:
+            self.__varsToIndexesVarsDefsFiles[newVar] = self.__varsToIndexesVarsDefsFiles[var]
+        if self.__varsTypes_exists:
+            self.__varsToIndexesVarsTypesFiles[newVar] = self.__varsToIndexesVarsTypesFiles[var]
+        if self.__citations_exists:
+            self.__varsToIndexesFilesCitations[newVar] = self.__varsToIndexesFilesCitations[var]
+
+    ##########################################################################################
+    ## Ajout d'un nom
+    ##########################################################################################
+
+    def add_nom_in_csv_variables(self, indexNom, newNom, position):
+        if position == 'before':
+            incr = 1
+        else:
+            incr = 2
+        nom = self.__noms[indexNom]
+        # ajout d'un nom  dans tous les tableaux
+        for file in self.__files:
+            filename, file_extension = os.path.splitext(file)
+            newfile = filename + '_temp' + file_extension
+
+            with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+                reader = csv.reader(inf, delimiter=",")
+                writer = csv.writer(outf, delimiter=",")
+                for row in reader:
+                    if row[0] == nom:  # ligne contenant le nom
+                        newRow = [newNom] + [''] *(len(row)-1)
+                        if position == 'before' :
+                            writer.writerow(newRow)
+                            writer.writerow(row)
+                        else:
+                            writer.writerow(row)
+                            writer.writerow(newRow)
+
+                    else:
+                        writer.writerow(row)
+
+
+            try:
+                os.remove(file)
+                os.rename(newfile, file)
+            except PermissionError:
+                print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_nom_in_csv_noms_definitions(self, indexNom, newNom, position):
+        if position == 'before':
+            incr = 1
+        else:
+            incr = 2
+        nom = self.__noms[indexNom]
+        # ajout d'un' dans tous les tableaus
+        for file in self.__nomsDefsFiles:
+            filename, file_extension = os.path.splitext(file)
+            newfile = filename + '_temp' + file_extension
+
+            with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+                reader = csv.reader(inf, delimiter=",")
+                writer = csv.writer(outf, delimiter=",")
+                for row in reader:
+                    if row[0] == nom:  # ligne contenant le nom
+                        newRow = [newNom] + [''] * (len(row) - 1)
+                        if position == 'before':
+                            writer.writerow(newRow)
+                            writer.writerow(row)
+                        else:
+                            writer.writerow(row)
+                            writer.writerow(newRow)
+
+                    else:
+                        writer.writerow(row)
+
+            try:
+                os.remove(file)
+                os.rename(newfile, file)
+            except PermissionError:
+                print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_nom_in_csv_noms_types(self, indexNom, newNom, position):
+        if position == 'before':
+            incr = 1
+        else:
+            incr = 2
+        nom = self.__noms[indexNom]
+        # ajout d'un nom dans tous les tableaux
+        for file in self.__nomsTypesFiles:
+            filename, file_extension = os.path.splitext(file)
+            newfile = filename + '_temp' + file_extension
+
+            with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+                reader = csv.reader(inf, delimiter=",")
+                writer = csv.writer(outf, delimiter=",")
+                for row in reader:
+                    if row[0] == nom:  # ligne contenant le nom
+                        newRow = [newNom] + [''] * (len(row) - 1)
+                        if position == 'before':
+                            writer.writerow(newRow)
+                            writer.writerow(row)
+                        else:
+                            writer.writerow(row)
+                            writer.writerow(newRow)
+
+                    else:
+                        writer.writerow(row)
+
+            try:
+                os.remove(file)
+                os.rename(newfile, file)
+            except PermissionError:
+                print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_nom_in_csv_citations(self, indexNom, newNom, position):
+        if position == 'before':
+            incr = 1
+        else:
+            incr = 2
+        nom = self.__noms[indexNom]
+        # ajout d'un' dans tous les tableaus
+        for file in self.__filesCitations:
+            filename, file_extension = os.path.splitext(file)
+            newfile = filename + '_temp' + file_extension
+
+            with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+                reader = csv.reader(inf, delimiter=",")
+                writer = csv.writer(outf, delimiter=",")
+                for row in reader:
+                    if row[0] == nom:  # ligne contenant le nom
+                        newRow = [newNom] + [''] * (len(row) - 1)
+                        if position == 'before':
+                            writer.writerow(newRow)
+                            writer.writerow(row)
+                        else:
+                            writer.writerow(row)
+                            writer.writerow(newRow)
+
+                    else:
+                        writer.writerow(row)
+
+            try:
+                os.remove(file)
+                os.rename(newfile, file)
+            except PermissionError:
+                print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+    def add_nom(self, nom, newNom, position='after'):
+        indexNom = self.__noms.index(nom)
+
+        if newNom in self.__noms:
+            print(color.red + "Le nom \"" + newNom + "\" existe déjà." + color.end)
+            sys.exit(1)
+
+        if position == 'before':
+            incr = 0
+        else:
+            incr = 1
+
+        # ajout du nom dans le tableau des variables
+        self.add_nom_in_csv_variables(indexNom, newNom, position)
+
+        # ajout du nom dans le tableau des définitions des noms
+        self.add_nom_in_csv_noms_definitions(indexNom, newNom, position)
+
+        # ajout du nom dans le tableau des types
+        self.add_nom_in_csv_noms_types(indexNom, newNom, position)
+
+        # ajout du nom dans le tableau des citations
+        self.add_nom_in_csv_citations(indexNom, newNom, position)
+
+        # mise à jour des variables
+        self.__noms.insert(indexNom + incr, newNom)
+
+        # mise à jour du tableau
+        newLine = ['']*len(self.__vars)
+        self.__data = np.insert(self.__data, indexNom + incr, newLine, axis=0)
+
+        # mise à jour des différents tableaus
+        self.__citations = np.insert(self.__citations, indexNom + incr, newLine, axis=0)
+        self.__noms_defs_dic[newNom] = ''
+        self.__noms_defs_noms.insert(indexNom + incr, self.nom_augmented(newNom))
+        self.__noms_augmented.insert(indexNom + incr, self.nom_augmented(newNom))
+        newLineAugmented = [self.value_augmented('', indexNom+incr, v) for v in range(len(self.__vars))]
+        self.__data_augmented = np.insert(self.__data_augmented, indexNom + incr, newLineAugmented, axis=0)
+        newLineTypes = [''] * len(self.__noms_types_types)
+        self.__noms_types_data = np.insert(self.__noms_types_data, indexNom + incr, newLineTypes, axis=0)
+
+       
+    ##########################################################################################
+    ## Méthodes d'écriture
+    ##########################################################################################
+
+    def write_val(self, nom, var, value):
+        nom = html.unescape(nom)
+        var = html.unescape(var)
+        value = html.unescape(value)
+        # TODO: contrôler la possibilité d'écriture dans le fichier
+        file = self.__files[self.__varsToIndexesFiles[var]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    indexVar = row.index(var)
+                elif i > 2 and row[0] == nom:
+                    row[indexVar] = html.unescape(value)
+                writer.writerow(row)
+                i = i + 1
+
+        #mise à jour des tableaux
+        indexVar=self.varToIndex(var)
+        indexNom=self.nomToIndex(nom)
+        self.__data[indexNom][indexVar]=value
+        self.__data_augmented[indexNom][indexVar] = self.value_augmented(self.__data[indexNom][indexVar],indexNom, indexVar)
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+
+    def write_var_definition(self, var, definition):
+        var = html.unescape(var)
+        definition = html.unescape(definition)
+        file = self.__varsDefsFiles[self.__varsToIndexesVarsDefsFiles[var]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    indexVar = row.index(var)
+                if i == 3:
+                    row[indexVar] = html.unescape(definition)
+                writer.writerow(row)
+                i = i + 1
+
+        #mise à jour des tableaux
+        indexVar=self.varToIndex(var)
+        self.__vars_defs_dic[var]=definition
+        self.__vars_augmented[indexVar] = self.var_augmented(var)
+
+        try :
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier \""+ file +"\" ne peut pas être ouvert." + color.end)
+
+
+    def write_nom_definition(self, nom, definition):
+        nom = html.unescape(nom)
+        definition = html.unescape(definition)
+        file = self.__nomsDefsFiles[self.__nomsToIndexesNomsDefsFiles[nom]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            for row in reader:
+                print(row[0])
+                if row[0] == nom:
+                    row[1] = html.unescape(definition)
+                writer.writerow(row)
+
+        #mise à jour des tableaux
+        indexNom=self.nomToIndex(nom)
+        self.__noms_defs_dic[nom]=definition
+        self.__noms_augmented[indexNom] = self.nom_augmented(nom)
+
+        try :
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier de définition des noms \""+ file +"\" ne peut pas être ouvert." + color.end)
+
+
+    def write_citation(self, nom, var, citation):
+        nom = html.unescape(nom)
+        var = html.unescape(var)
+        citation = html.unescape(citation)
+        file = self.__filesCitations[self.__varsToIndexesFilesCitations[var]]
+        filename, file_extension = os.path.splitext(file)
+        newfile = filename + '_temp' + file_extension
+        with open(file, encoding="UTF-8") as inf, open(newfile, 'w', encoding="UTF-8", newline='') as outf:
+            reader = csv.reader(inf, delimiter=",")
+            writer = csv.writer(outf, delimiter=",")
+            i = 0
+            for row in reader:
+                if i == 2:  # ligne des variables
+                    indexVar = row.index(var)
+                elif i > 2 and row[0] == nom:
+                    row[indexVar] = html.unescape(citation)
+                writer.writerow(row)
+                i = i + 1
+
+        try:
+            os.remove(file)
+            os.rename(newfile, file)
+        except PermissionError:
+            print(color.red + "Le fichier de citations \"" + file + "\" ne peut pas être ouvert." + color.end)
+
+        # mise à jour des tableaux
+        indexNom = self.nomToIndex(nom)
+        indexVar = self.varToIndex(var)
+        self.__citations[indexNom][indexVar] = citation
+        self.__data_augmented[indexNom][indexVar] = self.value_augmented(self.__data[indexNom][indexVar], indexNom,
+                                                                  indexVar)
+
+    ##########################################################################################
     ### types noms
     ##########################################################################################
 
@@ -1720,16 +3398,20 @@ class Correlations:
         if type(fileIn) == str: fileIn = [fileIn]
         fr = pd.DataFrame([])
         types = []
+        files = []
+        varsToIndexesNomsTypesFiles = {}  # dictionnaire : var:index fichier des types des variables
+
         for f in fileIn:
             try:
                 ar = np.array(pd.read_csv(open(f,encoding="UTF-8"), delimiter=","))
             except:
                 print("Impossible d\'ouvrir le fichier des types \"" + f + "\"")
                 sys.exit(1)
+
             # Suppression des colonnes (resp. lignes) dont le nom est vide
             j = 1
             while j < np.size(ar, 1):
-                if str(ar[0, j]) == 'nan':
+                if str(ar[1, j]) == 'nan':
                     ar = np.delete(ar, j, 1)
                 else:
                     j += 1
@@ -1739,12 +3421,15 @@ class Correlations:
                     ar = np.delete(ar, i, 0)
                 else:
                     i += 1
+            index = ar[2:, 0].tolist()
+            cols = ar[1, 1:].tolist()
+            ar = ar[2:, 1:]
 
-            index = ar[1:, 0].tolist()
-            cols = ar[0, 1:].tolist()
-            ar = ar[1:, 1:]
+            files.append(f)
+
             fr_new = pd.DataFrame(ar, index=index, columns=cols)
             fr = pd.concat([fr_new, fr], axis=1)
+
             # pour préserver l'ordre des types
             types = types + [str(x) for x in cols if x not in types]
 
@@ -1760,7 +3445,7 @@ class Correlations:
         if nomsTypesError:
             print('')
             print('')
-            print(color.bold + str(len(nomsTypesError)) + ' noms typées non reconnus : ' + color.end)
+            print(color.bold + str(len(nomsTypesError)) + ' noms typés non reconnus : ' + color.end)
             display(pd.DataFrame(columns=nomsTypesError))
 
         if nomSansType:
@@ -1789,6 +3474,7 @@ class Correlations:
         self.__noms_types_data = ar.tolist()
         self.__noms_types_noms = fr.index.tolist()
         self.__noms_types_types = [tp for tp in types if not tp == '']
+        self.__nomsTypesFiles = files
 
         # application des règles
         if nomsTypesRegles:
@@ -1809,7 +3495,7 @@ class Correlations:
         print(color.bold + 'Tableau des types de noms : ' + color.end)
 
         lines = self.__noms_types_data
-        index = self.__noms_types_noms
+        index = self.noms_augmented(self.__noms_types_noms)
         columns = self.__noms_types_types
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, columns, index)
@@ -1821,10 +3507,13 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
 
-    def nomToTypes(self, var):
-        tps = [tp for tp in self.__noms_types_types if var in self.typeToNoms(tp)]
+
+
+    def nomToTypes(self, nom):
+        tps = [tp for tp in self.__noms_types_types if nom in self.typeToNoms(tp)]
         return tps
 
     def nomToindexesTypes(self, nom):
@@ -1896,7 +3585,7 @@ class Correlations:
             sys.exit(1)
         for i in range(len(self.__noms_types_noms)) :
             indexesNomsType = [self.nomToIndex(self.__noms_types_noms[i]) for i in range(len(self.__noms_types_noms)) if
-                           self.__noms_types_data[i][indexType] in self.__coches]
+                               self.__noms_types_data[i][indexType] in self.__coches]
         return indexesNomsType
 
     def typesToIndexesNoms(self, tps):
@@ -1907,6 +3596,10 @@ class Correlations:
         return indexesNoms
 
     def typeToNoms(self, tp):
+        """
+        :param tp: type
+        :return: liste des noms ayant le type donné
+        """
         try:
             indexType = self.__noms_types_types.index(tp)
         except:
@@ -1914,7 +3607,7 @@ class Correlations:
             sys.exit(1)
 
         nomsType = [self.__noms_types_noms[i] for i in range(len(self.__noms_types_noms)) if
-                    self.__noms_types_data[indexType][i] in self.__coches]
+                    self.__noms_types_data[i][indexType] in self.__coches]
         return nomsType
 
 
@@ -2127,45 +3820,45 @@ class Correlations:
         # Etant donnée une formule propositionnelle sur les types,
         # retourne les noms correspondants
     def nomsTypesFormulaToIndexesNoms(self, f, expr):
-                import re
-                # suppression des opérateurs unaires
-                pat = "|".join(["\s*\\" + op + '\s*' for op in self.__logicalOperatorsUnary])
-                reg = re.compile(pat)
-                exprReduite = reg.sub('', expr)
-                # suppression des parenthèses
-                pat = "\s*\(\s*"
-                reg = re.compile(pat)
-                exprReduite = reg.sub('', exprReduite)
-                pat = "\s*\)\s*"
-                reg = re.compile(pat)
-                exprReduite = reg.sub('', exprReduite)
-                # extraction des types
-                pat2 = "|".join(["\s*\\" + op + '\s*' for op in self.__logicalOperatorsBinary])
-                listTypes = re.split(pat2, exprReduite)
-                indexesTypes = self.nomsTypesToIndexesTypes(listTypes, [])
+        import re
+        # suppression des opérateurs unaires
+        pat = "|".join(["\s*\\" + op + '\s*' for op in self.__logicalOperatorsUnary])
+        reg = re.compile(pat)
+        exprReduite = reg.sub('', expr)
+        # suppression des parenthèses
+        pat = "\s*\(\s*"
+        reg = re.compile(pat)
+        exprReduite = reg.sub('', exprReduite)
+        pat = "\s*\)\s*"
+        reg = re.compile(pat)
+        exprReduite = reg.sub('', exprReduite)
+        # extraction des types
+        pat2 = "|".join(["\s*\\" + op + '\s*' for op in self.__logicalOperatorsBinary])
+        listTypes = re.split(pat2, exprReduite)
+        indexesTypes = self.nomsTypesToIndexesTypes(listTypes, [])
 
-                # Problème des types qui sont des sous-chaînes d'un type...
+        # Problème des types qui sont des sous-chaînes d'un type...
 
-                # substitution des types par des symboles : type i -> xi
-                numbered_symbols(prefix='x', start=0)
-                exprS = expr
-                for i in indexesTypes:
-                    pat = "\s*" + self.__noms_types_types[i] + "\s*"
-                    reg = re.compile(pat)
-                    exprS = reg.sub('x' + str(i), exprS)
-                exprSymb = sympify(exprS)
+        # substitution des types par des symboles : type i -> xi
+        numbered_symbols(prefix='x', start=0)
+        exprS = expr
+        for i in indexesTypes:
+            pat = "\s*" + self.__noms_types_types[i] + "\s*"
+            reg = re.compile(pat)
+            exprS = reg.sub('x' + str(i), exprS)
+        exprSymb = sympify(exprS)
 
-                if exprSymb.is_Atom:
-                    return self.typeToIndexesNoms(self.__noms_types_types[indexesTypes[0]])
-                else:
-                    sexpr = srepr(exprSymb)
-                    sexpr = sexpr.replace('Or(', 'self.orVarsTypes(' + f + ',')
-                    sexpr = sexpr.replace('And(', 'self.andVarsTypes(' + f + ',')
-                    sexpr = sexpr.replace('Not(', 'self.notNomsTypes(' + f + ',')
+        if exprSymb.is_Atom:
+            return self.typeToIndexesNoms(self.__noms_types_types[indexesTypes[0]])
+        else:
+            sexpr = srepr(exprSymb)
+            sexpr = sexpr.replace('Or(', 'self.orVarsTypes(' + f + ',')
+            sexpr = sexpr.replace('And(', 'self.andVarsTypes(' + f + ',')
+            sexpr = sexpr.replace('Not(', 'self.notNomsTypes(' + f + ',')
 
-                    for i in indexesTypes:
-                        sexpr = sexpr.replace("Symbol('x" + str(i) + "')", "'" + self.__noms_types_types[i] + "'")
-                    return eval(sexpr)
+            for i in indexesTypes:
+                sexpr = sexpr.replace("Symbol('x" + str(i) + "')", "'" + self.__noms_types_types[i] + "'")
+            return eval(sexpr)
 
     def nomsTypesFormulaToNoms(self, f, expr):
         indexesNoms = self.nomsTypesFormulaToIndexesNoms(f, expr)
@@ -2194,8 +3887,8 @@ class Correlations:
 
     def findVars(self,
                  cars, vars=[], varSauf=[]):
+        if vars==[] : vars=self.__vars
         indexesVars = self.varsToIndexesVars(vars, varSauf)
-
         indexes = self.findVarsIndexes(cars, indexesVars)
         listVars = [self.__vars[i] for i in indexes]
         return listVars
@@ -2237,6 +3930,127 @@ class Correlations:
 
         listVars = [self.__vars[i] for i in indexesVars if str(cars).lower() in str(self.__data[indexNom][i]).lower()]
         return listVars
+
+    # indexes des noms pour lesquels les variables données ont une valeur donnée
+    #varsValues=[['nomVar1','valVar1'],['nomVar2','valVar2']]
+    def indexesNomsVarsValues(self,varsValues,indexesNoms):
+        resIndexesNoms=[]
+        for n in indexesNoms :
+            boole=false
+            for i in range(len(varsValues)) :
+                if self.__data[n,self.varToIndex(varsValues[i][0])] == varsValues[i][1] :
+                    boole=true
+                    break
+            if boole :
+                resIndexesNoms.append(n)
+        return resIndexesNoms
+
+    # noms pour lesquels les variables données ont une valeur donnée
+    def nomsVarsValues(self, varsValues=[], noms=[],
+                       nomSauf=[],nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=[]):
+
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        for vv in varsValues:
+            if not len(vv) == 2 :
+                print(color.bold +  "varsValues doit être une liste de ['vars', 'valeur']."+ color.end)
+                sys.exit(1)
+        resNoms=self.indexesNomsVarsValues(varsValues,indexesNoms)
+        return [self.__noms[i] for i in resNoms]
+
+    # indexes des noms pour lesquels les variables données contiennent une valeur donnée
+    def indexesNomsVarsContientValues(self,
+                              varsValues=[],
+                              noms=[], nomSauf=[],
+                              nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=[]):
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+
+        resIndexesNoms = []
+        for n in indexesNoms:
+            boole = true
+            for i in range(len(varsValues)):
+                if not varsValues[i][1] in self.__data[n,self.varToIndex(varsValues[i][0])]:
+                    boole = false
+                    break
+            if boole:
+                resIndexesNoms.append(n)
+        return resIndexesNoms
+
+    # noms pour lesquels les variables données ont une valeur donnée
+    def nomsVarsContientValues(self,
+                       varsValues,
+                        noms=[],
+                       nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=[]):
+        indexesNoms = self.indexesNomsVarsContientValues(varsValues=varsValues,
+                                                 nomsTypes=nomsTypes, nomsTypeSauf=nomsTypeSauf,
+                                                 nomsTypesFormule=nomsTypesFormule)
+        return [self.__noms[i] for i in indexesNoms]
+
+    def citationHtml(self, citation):
+        return "<div class='expander' style='text-align:justify;'>"+citation.replace('\n','<br>')+"</div>"
+
+    def find_citations(self, searched, noms=[], nomSauf=[],
+             vars=[], varSauf=[],
+             varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+             nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                                   pasColonne=10, pasLigne=10):
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+
+        lines=[]
+        redIndexesVars=[]
+        redIndexesNoms=[]
+
+        for n in indexesNoms:
+            line=[]
+            test = False
+            for v in indexesVars:
+                txt = self.__citations[n][v]
+                if re.search(searched, txt, re.IGNORECASE):
+                    redIndexesVars.append(v)
+                    line.append(self.citationHtml(self.__citations[n][v]))
+                    test = True
+                else:
+                    line.append('')
+
+            if test:
+                redIndexesNoms.append(n)
+                lines.append(line)
+        redIndexesVars = list(set(redIndexesVars))
+        redLines=[[self.citationHtml(self.__citations[n][v]) for v in redIndexesVars] for n in redIndexesNoms]
+
+        varsL = [self.indexToVar_augmented(v) for v in redIndexesVars]
+        nomsL = [self.indexToNom_augmented(n) for n in redIndexesNoms]
+
+        if pasColonne:
+            res = self.repeteIndex(pasColonne, redLines, varsL, nomsL)
+            redLines = res[0]
+            varsL = res[1]
+
+        if pasLigne:
+            res = self.repeteColumns(pasLigne, redLines, varsL, nomsL)
+            redLines = res[0]
+            nomsL = res[1]
+
+        df = pd.DataFrame(redLines, columns=varsL, index=nomsL)
+        display(HTML(df.to_html(escape=False)))
+        js = '''
+                <script>
+                $(".expander").click(function() {
+                    if ($(this).hasClass("expander")) {
+                        $(this).removeClass("expander");
+                        $(this).addClass("expanded")
+                    }
+                    else {
+                         $(this).addClass("expander");
+                         $(this).removeClass("expanded");
+                    }
+                    });
+
+                    </script>'''
+        display(HTML(js))
+
+
 
     # Recherche les éditions ayant une valeur donnée
     def find(self,
@@ -2323,30 +4137,214 @@ class Correlations:
         resNoms = []
         resLignes = []
         for L in resNomsLignes:
-            resNoms.append(L[0])
+            resNoms.append(self.nom_augmented(L[0]))
             del L[0]
             resLignes.append(L)
 
-        resVars = ['%', 'total\ncommuns'] + [self.__vars[i] for i in indexesVars]
+        resVars = ['%', 'total\ncommuns'] + [self.__vars_augmented[i] for i in indexesVars]
 
-        display(pd.DataFrame(resLignes, columns=resVars, index=resNoms))
+        df=pd.DataFrame(resLignes, columns=resVars, index=resNoms)
+        display(HTML(df.to_html(escape=False)))
 
-    # indexes des variables pour lesquelles les valeurs manquent
-    def manque(self, indexesVars, indexNom):
+    def varsManquantes(self, indexesVars, indexNom):
+        """
+        :param indexesVars:
+        :param indexNom:
+        :return: indexes des variables pour lesquelles les valeurs manquent
+        """
         return [i for i in indexesVars if self.__data[indexNom][i] in ['','?']]
 
 
-    def show_manque(self, nom,
-                    vars=[], varSauf=[],
-                    varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                    pasColonne=10):
-        indexNom = self.nomToIndex(nom)
-        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
-        indexesVarsManque = self.manque(indexesVars, indexNom)
-        varsManque=[self.indexToVar(v) for v in indexesVarsManque]
 
-        print('Valeurs manquantes pour '+nom+' : ' + str(len(varsManque)))
-        display(pd.DataFrame(columns=varsManque))
+    def nomsManquants(self, indexVar,indexesNoms):
+        """
+        :param indexVar:
+        :param indexesNoms:
+        :return: indexes des noms sans valeur sur la variable
+        """
+        return [n for n in indexesNoms if self.__data[n][indexVar] in ['','?']]
+
+
+    def show_noms_manquants(self, var,
+                    noms=[], nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                    pasColonne=10):
+        """
+        :param var:
+        :param noms:
+        :param nomSauf:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :param pasColonne:
+        :return: affiche les noms sans valeur pour la variable donnée
+        """
+        indexVar = self.varToIndex(var)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesNomsManque = self.nomsManquants(indexVar,indexesNoms )
+        nomsManque=[self.indexToNom(v) for v in indexesNomsManque]
+        if nomsManque :
+            print(color.bold +'Noms sans valeur pour la variable \"'+var+'\" : ' + str(len(nomsManque))+color.end)
+            display(pd.DataFrame(index=nomsManque))
+        else:
+            print(color.bold +'Aucun nom sans valeur pour la variable \"' + var + '\"' +color.end)
+
+
+    def show_vars_defs_manquantes(self,vars=[], varSauf=[],
+                    varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
+        """
+
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :return: variables sans définition
+        """
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        resVars=[v for v in indexesVars if v in self.__vars_sans_def ]
+        if resVars:
+            print('Variables sans définition : ' + str(len(resVars)))
+            display(pd.DataFrame(columns=resVars))
+        else:
+            print(color.bold + 'Toutes les variables ont une définition.')
+
+    def show_noms_defs_manquantes(self,noms=[], nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+        """
+
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :return: noms sans définition
+        """
+
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        resNoms=[n for n in indexesNoms if n in self.__noms_sans_def ]
+        if resNoms:
+            print('Noms sans définition : ' + str(len(resNoms)))
+            display(pd.DataFrame(columns=resVars))
+        else:
+            print(color.bold + 'Tous les noms ont une définition.')
+
+
+    def show_types_vars_manquants(self):
+        """
+        :return: types attribués à aucune variable
+        """
+        resTypes=[t for t in self.__vars_types_types if self.typeToVars(t)]
+        if resTypes:
+            print(color.bold +'Types de variables non attribués : ' +color.end)
+            display(pd.DataFrame(index=resTypes))
+        else:
+            print(color.bold + 'Tous les types sont attribués à une variable.')
+
+    def show_types_noms_manquants(self):
+        """
+        :return: types attribués à aucun nom
+        """
+        resTypes=[t for t in self.__noms_types_types if self.typeToNoms(t)]
+        if resTypes:
+            print(color.bold +'Types de noms non attribués : ' +color.end)
+            display(pd.DataFrame(index=resTypes))
+        else:
+            print(color.bold + 'Tous les types sont attribués à un nom.')
+
+    def show_citations_manquantes(self,
+                             vars=[], varSauf=[],
+                             varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                            noms=[],nomSauf=[],
+                    nomsTypes=[], nomsTypeSauf=[],nomsTypesFormule=[]):
+        """
+        :param vars:
+        :param varSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :param noms:
+        :param nomSauf:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :return: Valeurs sans citations pour les variables et les noms donnés
+        """
+        try: self.__citations
+        except :
+            print(color.bold +'Aucun fichier de citations.' +color.end)
+            raise
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesVarsDefinies=self.indexesDomaine(indexesVars, indexesNoms)
+        lines=[]
+        noms=[]
+        for n in indexesNoms:
+            line=[]
+            manque = false
+            for v in indexesVarsDefinies:
+                if self.__citations[n][v] in self.__nuls and not self.__data[n][v] in self.__exclus:
+                    line.append(self.__data_augmented[n][v])
+                    manque=true
+                else:
+                    line.append('')
+            if manque:
+                lines.append(line)
+                noms.append(self.__noms[n])
+
+        if lines:
+            print(color.bold +'Valeurs sans citation associée : ' +color.end)
+            df = pd.DataFrame(lines, index=noms, columns=self.indexesToVars(indexesVarsDefinies))
+            display(HTML(df.to_html(escape=False)))
+        else:
+            print(color.bold + 'Toutes les valeurs ont une citation associée.')
+
+    def vars_avec_citations(self, nom, vars=[], varSauf=[],
+                            varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                         domaine= 'all'):
+        indexNom = self.__noms.index(nom)
+        indexesVars = self.getIndexesVars( vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNomsVars = self.corpusdomaine('all', domaine, [indexNom], indexesVars)
+        indexesVars = indexesNomsVars[1]
+        indexesVarsCitations = [v for v in indexesVars if self.__citations[indexNom][v] != '']
+        return indexesVarsCitations
+
+    def vars_sans_citations(self, nom, vars=[], varSauf=[],
+                            varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                         domaine= 'all'):
+        indexNom = self.__noms.index(nom)
+        indexesVars = self.getIndexesVars( vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNomsVars = self.corpusdomaine('all', domaine, [indexNom], indexesVars)
+        indexesVars = indexesNomsVars[1]
+        indexesVarsCitations = [v for v in indexesVars if self.__citations[indexNom][v] == '']
+        return indexesVarsCitations
+
+    def show_avec_citations(self, nom, vars=[], varSauf=[],
+                            varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                         domaine= 'all'):
+        indexNom = self.__noms.index(nom)
+        indexesVars = self.vars_avec_citations( nom, vars, varSauf,
+                                          varsTypes, varsTypeSauf, varsTypesFormule, domaine = domaine)
+        lines = [[self.__data_augmented[indexNom][v] for v in indexesVars]]
+        columns = [self.indexToVar_augmented(v) for v in indexesVars]
+        index = [self.nom_augmented(nom)]
+        print('Variables : ' + str(len(indexesVars)))
+        df = pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
+    def show_sans_citations(self, nom, vars=[], varSauf=[],
+                            varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                         domaine= 'all'):
+        indexNom = self.__noms.index(nom)
+        indexesVars = self.vars_sans_citations(nom, vars, varSauf,
+                                          varsTypes, varsTypeSauf, varsTypesFormule, domaine = domaine)
+        lines = [[self.__data_augmented[indexNom][v] for v in indexesVars]]
+        columns = [self.indexToVar_augmented( v) for v in indexesVars]
+        index = [self.nom_augmented( nom)]
+        print('Variables : ' + str(len(indexesVars)))
+        df = pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
 
     # Regroupe les éditions ayant les mêmes valeurs sur un ensemble de variable donné
     def repartitionList(self,
@@ -2374,15 +4372,150 @@ class Correlations:
                          vars=[], varSauf=[],
                          noms=[], nomSauf=[],
                          varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                         nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+                         nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                         domaine= 'all', corpus = 'all'):
 
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesNomsVars = self.corpusdomaine(corpus, domaine, indexesNoms, indexesVars)
+        indexesVars = indexesNomsVars[1]
+        indexesNoms = indexesNomsVars[0]
 
-        listVars = [self.__vars[v] for v in indexesVars]
+        listVars = [self.__vars_augmented[v] for v in indexesVars]
         partitions = self.repartitionList(indexesVars, indexesNoms)
-        res = [couple[1] + [", ".join(couple[0])] for couple in partitions]
-        display(pd.DataFrame(res, columns=listVars + ['noms']))
+        total = len(indexesNoms)
+        res = [[round(len(couple[0]) / total * 100)] + couple[1] + [", ".join(self.noms_augmented( couple[0]))] for
+               couple in partitions]
+        df=pd.DataFrame(res, columns=['%']+listVars + ['noms'])
+        display(HTML(df.to_html(escape=False)))
+
+    def values_distribution(self, indexesNoms, indexesVars):
+        '''
+
+                        :param vars:
+                        :param varSauf:
+                        :param noms:
+                        :param nomSauf:
+                        :param varsTypes:
+                        :param varsTypeSauf:
+                        :param varsTypesFormule:
+                        :param nomsTypes:
+                        :param nomsTypeSauf:
+                        :param nomsTypesFormule:
+                        :return: list of the values and their effectifs of the selected variables on the selected names.
+                        Descendent order by effectif
+                        [[[var1 val1, effectif1],[var1 val2,effectif2],...],[[var2 val1, effectif1],[var2 val2,effectif2],...], ...]
+                        '''
+
+        valsEffsList=[]
+
+        for v in indexesVars:
+                values = []
+                effectifs = []
+                for n in indexesNoms:
+                    value = self.__data[n][v]
+                    try :
+                        index = values.index(value)
+                        effectifs[index] += 1
+                    except ValueError:
+                        values.append(value)
+                        effectifs.append(1)
+
+                effectifs, values = zip(*sorted(zip(effectifs, values),reverse =  True))
+                valsEffs = [[values[i],effectifs[i]] for i in range(len(values))]
+                valsEffsList.append(valsEffs)
+
+        return valsEffsList
+
+
+    def values_distribution_pourcent(self, indexesNoms, indexesVars):
+        '''
+
+                :param vars:
+                :param varSauf:
+                :param noms:
+                :param nomSauf:
+                :param varsTypes:
+                :param varsTypeSauf:
+                :param varsTypesFormule:
+                :param nomsTypes:
+                :param nomsTypeSauf:
+                :param nomsTypesFormule:
+                :return: list of the values and their porcentage of the selected variables on the selected names.
+                Descendent order by percent
+                [[[var1 val1, %],[var1 val2,%],...],[[var2 val1, %],[var2 val2,%],...], ...]
+                '''
+
+        valsEffsList = self.values_distribution(indexesNoms, indexesVars)
+
+        for i in range(len(valsEffsList)):
+                #valsEffsList[i] = [[vari val1, effectif1],[vari val2,effectif1],...]
+                total = 0
+                for j in range(len(valsEffsList[i])):
+                    #valsEffsList[i][j] = [vari valj, effectifj]
+                    total += valsEffsList[i][j][1]
+                for j in range(len(valsEffsList[i])):
+                    prc = round(100 *   valsEffsList[i][j][1] /total)
+                    valsEffsList[i][j][1] = prc
+
+        return valsEffsList
+
+    def show_popularity(self,vars=[], varSauf=[],
+                 noms=[], nomSauf=[],
+                 varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                 nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                        domaine = 'all', corpus = 'all'):
+        '''
+
+        :param vars:
+        :param varSauf:
+        :param noms:
+        :param nomSauf:
+        :param varsTypes:
+        :param varsTypeSauf:
+        :param varsTypesFormule:
+        :param nomsTypes:
+        :param nomsTypeSauf:
+        :param nomsTypesFormule:
+        :return: list of the most popular values of the selected variables on the selected names
+        '''
+
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+        indexesNomsVars = self.corpusdomaine(corpus, domaine, indexesNoms, indexesVars)
+        indexesVars = indexesNomsVars[1]
+        indexesNoms = indexesNomsVars[0]
+
+        valsPrcList = self.values_distribution_pourcent(indexesNoms, indexesVars)
+
+        # valeurs avec le plus fort pourcentage
+        valsMax = [valsPrcList[i][0][0] for i in range(len(valsPrcList))]
+        prcMax = [valsPrcList[i][0][1] for i in range(len(valsPrcList))]
+
+
+
+        prctDiffList = []
+        for indexNom in indexesNoms:
+            prctDiff=self.equalVals(indexNom, indexesVars, valsMax)
+            prctDiff.insert(1,indexNom) #insert indexNom to recover it after sorting the list
+            prctDiffList.append(prctDiff)
+            prctDiffList.sort(reverse =  True)
+
+        resNoms=['','']
+        lines = []
+        lines.append(['']+valsMax)
+        prcMax=[str(prc)+'%' for prc in prcMax]
+        lines.append(['']+prcMax)
+        for l in prctDiffList:
+            resNoms.append(self.nom_augmented(self.__noms[l[1]]))
+            prc = str(l[0])
+            values = [self.value_augmented(l[2][i], l[1],indexesVars[i]) if l[2][i] !='' else '' for i in range(len(l[2]))  ]
+            line = [str(l[0])+'%']+values
+            lines.append(line)
+
+        resVars = [self.var_augmented(self.__vars[v]) for v in indexesVars]
+        df = pd.DataFrame(lines, columns=['%']+resVars, index=resNoms)
+        display(HTML(df.to_html(escape=False)))
 
     def contains(self,
                  chain, vars=[], varSauf=[],
@@ -2407,11 +4540,12 @@ class Correlations:
                     l.append('')
             if ok:
                 resData.append(l)
-                resNoms.append(self.__noms[i])
+                resNoms.append(self.__noms_augmented[i])
 
-        resVars = [self.__vars[i] for i in indexesVars]
+        resVars = [self.__vars_augmented[i] for i in indexesVars]
+        df=pd.DataFrame(resData, columns=resVars, index=resNoms)
 
-        return pd.DataFrame(resData, columns=resVars, index=resNoms)
+        return display(HTML(df.to_html(escape=False)))
 
     def decomposition(self,
                       indexNom, indexesNomsBaseIncomplete, indexesVars, indexesNoms, max, pourcent, Pourcent):
@@ -2470,7 +4604,7 @@ class Correlations:
         prcs = resDecomp[0]
         decomp = resDecomp[1]
 
-        resVars = ['%'] + [self.__vars[i] for i in indexesVars]
+        resVars = ['%'] + [self.__vars_augmented[i] for i in indexesVars]
         print('Variables : ' + str(len(resVars)))
 
         if not len(decomp) == 0:
@@ -2494,10 +4628,11 @@ class Correlations:
                 resNoms = [self.__noms[i] for i in indexesComplet]
                 lines = resData
                 columns = resVars
-                index = [nom] + resNoms
+                index = [self.nom_augmented(nom)] + self.noms_augmented(resNoms)
                 print('')
                 print(color.bold + str(prcTotal) + "% : " + ', '.join(resNoms) + color.end)
-                display(pd.DataFrame(lines, columns=columns, index=index))
+                df=pd.DataFrame(lines, columns=columns, index=index)
+                display(HTML(df.to_html(escape=False)))
         else:
             print('Aucune décomposition.')
 
@@ -2555,14 +4690,14 @@ class Correlations:
             total = len(self.indexes_like(indexNom, indexesNoms, [v], 100))
             prc = round(100 * total / len(indexesNoms))
             if Pourcent >= prc >= pourcent:
-                resVars.append(self.__vars[v])
+                resVars.append(self.__vars_augmented[v])
                 resVals.append(self.__data[indexNom][v])
                 totaux.append(total)
                 pourcents.append(prc)
 
         lines = [resVals, totaux, pourcents]
         columns = resVars
-        index = [nom, 'total', '%']
+        index = [self.nom_augmented(nom), 'total', '%']
 
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, columns, index)
@@ -2574,7 +4709,9 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame([resVals, totaux, pourcents], columns=columns, index=index))
+        df=pd.DataFrame([resVals, totaux, pourcents], columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
 
     def noms_data_pourcent(self,
                            nom, noms=[], nomSauf=[],
@@ -2607,7 +4744,8 @@ class Correlations:
                                 vars=[], varSauf=[],
                                 pourcent=0, Pourcent=100,
                                 varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                                nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+                                nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                                pasColonne=10, pasLigne=10):
         nomsSel = self.noms_data_pourcent(
             nom, noms=noms, nomSauf=nomSauf,
             vars=vars, varSauf=varSauf, varsTypesFormule=varsTypesFormule,
@@ -2625,7 +4763,8 @@ class Correlations:
             varsTypesFormule=varsTypesFormule,
             nomsTypes=nomsTypes, nomsTypeSauf=nomsTypeSauf,
             nomsTypesFormule=nomsTypesFormule)
-        self.show_data(noms=[nom] + nomsSel, vars=varsSel)
+        self.show_data(noms=[nom] + nomsSel, vars=varsSel,
+                           pasColonne=pasColonne, pasLigne=pasLigne)
 
     def vars_only(self,
                   nom, noms=[], nomSauf=[],
@@ -2758,10 +4897,10 @@ class Correlations:
                     line.append('')
             lines.append(line)
 
-        varsInnoveComplet = [self.indexToVar(v) for v in indexesVarsInnoveComplet]
+        varsInnoveComplet = [self.indexToVar_augmented(v) for v in indexesVarsInnoveComplet]
 
         columns = ['%'] + varsInnoveComplet
-        index = noms
+        index = self.noms_augmented(noms)
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, columns, index)
             lines = res[0]
@@ -2772,7 +4911,8 @@ class Correlations:
             lines = res[0]
             index = res[1]
         print("Variables : "+str(len(indexesVars)))
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
 
     def show_tableau_innove_types(self,
                                   noms=[], nomSauf=[],
@@ -2780,8 +4920,8 @@ class Correlations:
                                   varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
                                   varsTypeSortie=[], varsTypeSortieSauf=[],
                                   nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
-                                    effectif=0, Effectif=0,
-                                   pasColonne=10, pasLigne=10):
+                                  effectif=0, Effectif=0,
+                                  pasColonne=10, pasLigne=10):
 
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
         indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
@@ -2839,8 +4979,8 @@ class Correlations:
                 #total = len(set(dictNomsIndexesVarsInnove[nom]).intersection(set(indexesVars)))
                 line.append(totalNom)
                 for tp in typesInnoveComplet:
-                    communs = list(set(dictNomsIndexesVarsInnove[nom]).\
-                                   intersection(set(collTypes[tp])).\
+                    communs = list(set(dictNomsIndexesVarsInnove[nom]). \
+                                   intersection(set(collTypes[tp])). \
                                    intersection(set(indexesVars)))
                     val = len(communs)
                     if val:
@@ -2850,7 +4990,7 @@ class Correlations:
                 lines.append(line)
 
             columns = ['Total'] + typesInnoveComplet
-            index = ['Effectifs'] + noms
+            index = ['Effectifs'] + self.noms_augmented(noms)
 
             if pasColonne:
                 res = self.repeteIndex(pasColonne, lines, columns, index)
@@ -2862,7 +5002,8 @@ class Correlations:
                 lines = res[0]
                 index = res[1]
 
-            display(pd.DataFrame(lines, columns=columns, index=index))
+            df=pd.DataFrame(lines, columns=columns, index=index)
+            display(HTML(df.to_html(escape=False)))
 
     #
     def show_tableau_innove_types_pourcent(self,
@@ -2925,9 +5066,9 @@ class Correlations:
         # pourcentage d'innovation total pour chaque nom
         lines.append([effectifs[0]])  # effectif total
         for nom in noms:
-            totalNom = len(set(dictNomsIndexesVarsInnove[nom]).\
-                           intersection(set(indexesVarsInnoveComplet)).\
-                            intersection(set(indexesVars)))
+            totalNom = len(set(dictNomsIndexesVarsInnove[nom]). \
+                           intersection(set(indexesVarsInnoveComplet)). \
+                           intersection(set(indexesVars)))
             prcNom = str(round(totalNom / totalVars * 100))+'%'
 
             lines.append([prcNom]) # pourcentage total
@@ -2959,7 +5100,7 @@ class Correlations:
 
 
         columns = ['Total'] + typesReduit
-        index = ['Effectifs'] + noms
+        index = ['Effectifs'] + self.noms_augmented(noms)
 
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, columns, index)
@@ -2971,7 +5112,9 @@ class Correlations:
             lines = res[0]
             index = res[1]
         print("Variables : " + str(len(indexesVars)))
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
 
     def test_traduction(self,noms,vars=[], varSauf=[],
                         varsTypes = [], varsTypeSauf = [], varsTypesFormule = '') :
@@ -2980,8 +5123,8 @@ class Correlations:
             noms = [noms]
 
         return self.show_tableau_innove_types_pourcent(noms = noms, vars =  vars, varSauf = varSauf,
-                                            varsTypes = varsTypes, varsTypeSauf = varsTypeSauf, varsTypesFormule = varsTypesFormule,
-                                            varsTypeSortie = ['traduction', 'citation'])
+                                                       varsTypes = varsTypes, varsTypeSauf = varsTypeSauf, varsTypesFormule = varsTypesFormule,
+                                                       varsTypeSortie = ['traduction', 'citation'])
 
     ##########################################################################################
     ### Tableaux de corrélations
@@ -3020,7 +5163,7 @@ class Correlations:
             if not self.__data[indexNom1][k] in self.__exclus and \
                     not self.__data[indexNom2][k] in self.__exclus and \
                     not self.equal(self.__data[indexNom1][k], self.__data[indexNom2][k]):
-                diff.append(self.__data[indexNom1][k])
+                diff.append(self.__data_augmented[indexNom1][k])
             else:
                 diff.append('')
 
@@ -3033,7 +5176,7 @@ class Correlations:
             if not self.__data[indexNom1][k] in self.__exclus and \
                     not self.__data[indexNom2][k] in self.__exclus and \
                     not self.equalStrict(self.__data[indexNom1][k], self.__data[indexNom2][k]):
-                diff.append(self.__data[indexNom1][k])
+                diff.append(self.__data_augmented[indexNom1][k])
             else:
                 diff.append('')
 
@@ -3066,15 +5209,16 @@ class Correlations:
                 self.difference(indexNom2, indexNom1, indexesVars)]
 
         # ligne avec les critères
-        varsL = [self.indexToVar(v) for v in indexesVars]
-        nomsL = [nom1, nom2]
-        display(pd.DataFrame(diff, columns=varsL, index=nomsL))
+        varsL = [self.indexToVar_augmented(v) for v in indexesVars]
+        nomsL = [self.nom_augmented(nom1), self.nom_augmented(nom2)]
+        df=pd.DataFrame(diff, columns=varsL, index=nomsL)
+        display(HTML(df.to_html(escape=False)))
 
     def show_difference_types(self,
                               nom1, nom2, vars=[], varSauf=[],
                               varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
                               varsTypeSortie=[], varsTypeSortieSauf=[],
-                              effectif=0, Effectif=0,
+                              effectifType=0, EffectifType=0,
                               pourcenType=0, PourcenType=100):
         indexNom1 = self.nomToIndex(nom1)
         indexNom2 = self.nomToIndex(nom2)
@@ -3094,17 +5238,17 @@ class Correlations:
         typesDifferenceComplet = [self.__vars_types_types[i] for i in indexesTypesDifferenceComplet]
         effectifs = self.effectifsTypes([indexNom1, indexNom2], indexesVars, indexesTypesDifferenceComplet)
 
-        if effectif or Effectif:
+        if effectifType or EffectifType:
             # restriction de indexesVarsTypes
-            if Effectif == 0: Effectif = len(self.__vars)
+            if EffectifType == 0: EffectifType = len(self.__vars)
             indexesTypesDifferenceComplet = [indexesTypesDifferenceComplet[i] \
                                              for i in range(len(indexesTypesDifferenceComplet)) \
-                                             if Effectif >= effectifs[i + 1] >= effectif]
+                                             if EffectifType >= effectifs[i + 1] >= effectifType]
             typesDifferenceComplet = [self.__vars_types_types[i] for i in indexesTypesDifferenceComplet]
 
             total = effectifs[0]
             effectifs.pop(0)
-            effectifs = [e for e in effectifs if Effectif >= e >= effectif]
+            effectifs = [e for e in effectifs if EffectifType >= e >= effectifType]
             effectifs.insert(0, total)
 
 
@@ -3159,7 +5303,7 @@ class Correlations:
         indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
 
         com = self.communsStrict(indexNom1, indexNom2, indexesVars)
-        vars_com = [self.indexToVar(indexesVars[i]) for i in range(len(indexesVars)) if not com[i] == '']
+        vars_com = [self.indexToVar(indexesVars[i]) for i in range(len(indexesVars)) if not com[i] in self.__nuls]
 
         return vars_com
 
@@ -3204,9 +5348,10 @@ class Correlations:
         com = [self.communsStrict(indexNom1, indexNom2, indexesVars)]
 
         # ligne avec les critères
-        varsL = [self.indexToVar(v) for v in indexesVars]
-        nomsL = [nom1 + '/' + nom2]
-        display(pd.DataFrame(com, columns=varsL, index=nomsL))
+        varsL = [self.indexToVar_augmented(v) for v in indexesVars]
+        nomsL = [self.nom_augmented(nom1) + '/' + self.nom_augmented(nom2)]
+        df=pd.DataFrame(com, columns=varsL, index=nomsL)
+        display(HTML(df.to_html(escape=False)))
 
     # valeurs communes d'une édition avec d'autres éditions,
     # en précisant le pourcentage d'éditions ayant cette valeur
@@ -3236,7 +5381,7 @@ class Correlations:
             total = len(indexesNomsCommun)
             prc = round(100 * total / len(indexesNoms))
             if Pourcent >= prc > pourcent:
-                resVars.append(self.__vars[v])
+                resVars.append(self.__vars_augmented[v])
                 for n in indexesNoms:
                     if n in indexesNomsCommun:
                         linesNoms[n].append(self.__data[n][v])
@@ -3253,7 +5398,7 @@ class Correlations:
             if totalNoms[n]:
                 total = self.totalNotNull(linesNoms[n])
                 lines.append([total] + linesNoms[n])
-                resNoms.append(self.indexToNom(n))
+                resNoms.append(self.__noms_augmented[n])
         lines.append([''] + totaux)
         lines.append([''] + pourcents)
 
@@ -3270,7 +5415,8 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
 
     def show_commun_types(self,
                           nom1, nom2, vars=[], varSauf=[],
@@ -3298,7 +5444,7 @@ class Correlations:
         typesCommunComplet = [self.__vars_types_types[i] for i in indexesTypesCommunComplet]
         effectifs = self.effectifsTypes([indexNom1, indexNom2], indexesVars, indexesTypesCommunComplet)
 
-        if effectif or Effectif:
+        if effectifType or EffectifType:
             # restriction de indexesVarsTypes
             if EffectifType == 0: EffectifType = len(self.__vars)
             indexesTypesCommunComplet = [indexesTypesCommunComplet[i] \
@@ -3308,7 +5454,7 @@ class Correlations:
 
             total = effectifs[0]
             effectifs.pop(0)
-            effectifs = [e for e in effectifs if Effectif >= e >= effectif]
+            effectifs = [e for e in effectifs if EffectifType >= e >= effectifType]
             effectifs.insert(0, total)
 
         # première ligne avec l'effectif total pour chaque type
@@ -3347,7 +5493,7 @@ class Correlations:
         lines.append(line1)
         lines.append(line2)
         lines.append(line3)
-        print(color.bold + nom1 + '/' + nom2 + color.end)
+        print(color.bold + nom1 + '/' +nom2 + color.end)
 
         display(pd.DataFrame(lines,
                              columns=['Total'] + typesReduits,
@@ -3373,6 +5519,32 @@ class Correlations:
             return [0, sum]
 
             # Tableau descendant des corrélations
+
+    def tableau_correlations(self,
+                                  indexNom, indexesVars, indexesNoms,
+                                  pourcent, Pourcent):
+
+        # liste des corrélations, avec le nom au début et le total à la fin
+        cor = []
+        for k in indexesNoms:
+            if not k == indexNom:
+                l = self.communs(indexNom, k, indexesVars)
+                # ajouts des stats en début de liste
+                total = self.totalPondereVarsDefiniesConjointes(
+                    indexNom, k, indexesVars)
+                totalCommun = self.totalNotNull(l)
+                try:
+                    prc = round(100 * totalCommun / total)
+                except:
+                    prc = 0
+                l = [prc, total, totalCommun] + l
+                l.insert(0, self.__noms[k])
+                if Pourcent >= l[1] >= pourcent:
+                    cor.append(l)
+
+        cor_sorted = sorted(cor, key=itemgetter(1), reverse=True)
+
+        return cor_sorted
 
     def tableau_correlations_desc(self,
                                   indexNom, indexesVars, indexesNoms,
@@ -3428,14 +5600,14 @@ class Correlations:
         return corAsc_sorted
 
     def show_discrimine(self,
-                                       nom, discrimines, vars=[], varSauf=[],
-                                       varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                                       pasColonne=10):
+                        nom, discrimines, vars=[], varSauf=[],
+                        varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                        pasColonne=10):
         # variables sur lesquelles les deux éditions diffèrent
         # parmi celle où le nom a des valeurs égales à l'une ou l'autre
         # varsDiff1 = self.vars_difference_relative(nom,discrimnes)
         varsDiff = self.vars_difference(discrimines[0], discrimines[1],
-                        vars = self.vars_somme_relative(nom,discrimines))
+                                        vars = self.vars_somme_relative(nom,discrimines))
         #varsDiff = list(set(varsDiff1) & set(varsDiff2))
         if vars :
             vars = list (set(vars) & set(varsDiff))
@@ -3443,11 +5615,59 @@ class Correlations:
             vars = varsDiff
 
         self.show_tableau_correlations_desc(
-                                       nom, noms=discrimines,
-                                        vars = vars,
-                                        varSauf=set(varSauf + self.vars_innove(nom)),
-                                       varsTypes = varsTypes, varsTypeSauf =  varsTypeSauf, varsTypesFormule =  varsTypesFormule,
-                                       pasColonne = pasColonne)
+            nom, noms=discrimines,
+            vars = vars,
+            varSauf=set(varSauf + self.vars_innove(nom)),
+            varsTypes = varsTypes, varsTypeSauf =  varsTypeSauf, varsTypesFormule =  varsTypesFormule,
+            pasColonne = pasColonne)
+
+    def show_tableau_correlations(self,
+                                       nom, vars=[], varSauf=[],
+                                       noms=[], nomSauf=[],
+                                       pourcent=0, Pourcent=100,effectif = 0, Effectif = 0,
+                                       varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                                       nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule='',
+                                       pasColonne=10, pasLigne=10):
+
+        indexNom = self.nomToIndex(nom)
+        indexesVars = self.getIndexesVars(vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
+        indexesVars = self.indexesVarsDefiniesNom(indexNom, indexesVars)
+
+        indexesNoms = self.getIndexesNoms(noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
+
+        self.set_selectedIndexesVars(indexesVars)
+        self.set_selectedIndexesNoms(indexesNoms)
+
+        cor = self.tableau_correlations(indexNom, indexesVars, indexesNoms, pourcent, Pourcent)
+        # première ligne avec les poids
+        # poidsL=['poids : ']+self.__selectedPoids
+
+        if Effectif == 0: Effectif = len(self.__vars)
+
+        # deuxième ligne avec les critères
+        varsL = ['%', 'effectif', 'communs'] + [self.indexToVar_augmented(v) for v in indexesVars]
+        nomsL = []
+        corData = []
+        for L in cor:
+            if Effectif >= L[2] >= effectif :
+                nomsL.append(self.nom_augmented(L[0]))
+                del L[0]
+                corData.append(L)
+
+        if pasColonne:
+            res = self.repeteIndex(pasColonne, corData, varsL, nomsL)
+            corData = res[0]
+            varsL = res[1]
+
+        if pasLigne:
+            res = self.repeteColumns(pasLigne, corData, varsL, nomsL)
+            corData = res[0]
+            nomsL = res[1]
+
+        print('Variables : ' + str(len(varsL) - 3))
+        df=pd.DataFrame(corData, columns=varsL, index=nomsL)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_tableau_correlations_desc(self,
                                        nom, vars=[], varSauf=[],
@@ -3478,12 +5698,12 @@ class Correlations:
         if Effectif == 0: Effectif = len(self.__vars)
 
         # deuxième ligne avec les critères
-        varsL = ['%', 'effectif', 'communs'] + [self.indexToVar(v) for v in indexesVars]
-        nomsL = []
-        corDesData = []
+        varsL = ['%', 'effectif', 'communs'] + [self.indexToVar_augmented(v) for v in indexesVars]
+        nomsL = [self.nom_augmented(nom)]
+        corDesData = [['','','']+[self.__data_augmented[indexNom][v] for v in indexesVars]]
         for L in corDes:
             if Effectif >= L[2] >= effectif :
-                nomsL.append(L[0])
+                nomsL.append(self.nom_augmented(L[0]))
                 del L[0]
                 corDesData.append(L)
 
@@ -3498,7 +5718,8 @@ class Correlations:
             nomsL = res[1]
 
         print('Variables : ' + str(len(varsL) - 3))
-        display(pd.DataFrame(corDesData, columns=varsL, index=nomsL))
+        df=pd.DataFrame(corDesData, columns=varsL, index=nomsL)
+        display(HTML(df.to_html(escape=False)))
 
     def show_tableau_correlations_asc(self,
                                       nom, vars=[], varSauf=[],
@@ -3523,12 +5744,12 @@ class Correlations:
         corAsc = self.tableau_correlations_asc(indexNom, indexesVars, indexesNoms, pourcent, Pourcent)
 
         # deuxième ligne avec les critères
-        varsL = ['%', 'effectif', 'communs'] + [self.indexToVar(v) for v in indexesVars]
+        varsL = ['%', 'effectif', 'communs'] + [self.indexToVar_augmented(v) for v in indexesVars]
         nomsL = []
         corAscData = []
         for L in corAsc:
             if Effectif >= L[2] >= effectif :
-                nomsL.append(L[0])
+                nomsL.append(self.nom_augmented(L[0]))
                 del L[0]
                 corAscData.append(L)
 
@@ -3546,7 +5767,8 @@ class Correlations:
             index = res[1]
 
         print('Variables : ' + str(len(varsL) - 3))
-        display(pd.DataFrame(corAscData, columns=columns, index=index))
+        df=pd.DataFrame(corAscData, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
 
     def show_tableaux_correlations_asc(self,
                                        vars=[], varSauf=[],
@@ -3852,7 +6074,7 @@ class Correlations:
         # première ligne avec l'effectif total et pour chaque type
         corDesData.append(effectifs)
         for L in corDes:
-            nomsL.append(L[0])
+            nomsL.append(self.nom_augmented(L[0]))
             del L[0]
             corDesData.append(L)
 
@@ -3871,14 +6093,16 @@ class Correlations:
 
         print('Types : ' + str(len(varsTypeSortie)))
 
-        display(pd.DataFrame(corDesData, columns=columns, index=index))
+        df=pd.DataFrame(corDesData, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
 
     #Fonction pour discriminer les corrélations d'une édition à deux autres suivant les types
     def show_discrimine_types(self,
-                                       nom, discrimines, vars=[], varSauf=[],
-                                       varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                                        varsTypeSortie=[], varsTypeSortieSauf=[],
-                                       pasColonne=10):
+                              nom, discrimines, vars=[], varSauf=[],
+                              varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                              varsTypeSortie=[], varsTypeSortieSauf=[],
+                              pasColonne=10):
         varsDiff = self.vars_difference(discrimines[0], discrimines[1])
         if vars :
             vars = list (set(vars) & set(varsDiff))
@@ -3886,19 +6110,19 @@ class Correlations:
             vars = varsDiff
 
         self.show_tableau_correlations_types_desc(
-                                       nom, noms=discrimines,
-                                        vars = vars,
-                                        varSauf=set(varSauf + self.vars_innove(nom)),
-                                       varsTypes = varsTypes, varsTypeSauf =  varsTypeSauf, varsTypesFormule =  varsTypesFormule,
-                                        varsTypeSortie = varsTypeSortie, varsTypeSortieSauf = varsTypeSortieSauf,
-                                       pasColonne = pasColonne)
+            nom, noms=discrimines,
+            vars = vars,
+            varSauf=set(varSauf + self.vars_innove(nom)),
+            varsTypes = varsTypes, varsTypeSauf =  varsTypeSauf, varsTypesFormule =  varsTypesFormule,
+            varsTypeSortie = varsTypeSortie, varsTypeSortieSauf = varsTypeSortieSauf,
+            pasColonne = pasColonne)
 
 
     def show_tableau_correlations_types_asc(self,
                                             nom, vars=[], varSauf=[],
                                             noms=[], nomSauf=[],
                                             pourcent=0, Pourcent=100,
-                                            effectif=0, Effectif=0,
+                                            effectifType=0, EffectifType=0,
                                             varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
                                             varsTypeSortie=[], varsTypeSortieSauf=[],
                                             nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
@@ -3914,13 +6138,13 @@ class Correlations:
 
         effectifs = self.effectifsTypesNom(indexNom, indexesVars, indexesVarsTypeSortie)
 
-        if effectif or Effectif:
+        if effectifType or EffectifType:
             # restriction de indexesVarsTypes
-            if Effectif == 0: Effectif = len(self.__vars)
+            if EffectifType == 0: EffectifType = len(self.__vars)
             indexesVarsTypes = [indexesVarsTypes[i] \
                                 for i in range(len(indexesVarsTypeSortie)) \
-                                if Effectif >= effectifs[i + 1] >= effectif]
-            effectifs = [e for e in effectifs if Effectif >= e >= effectif]
+                                if EffectifType >= effectifs[i + 1] >= effectifType]
+            effectifs = [e for e in effectifs if EffectifType >= e >= effectifType]
 
         corAsc = self.tableau_correlations_types_asc(indexNom, indexesVars, indexesNoms,
                                                      indexesVarsTypes, indexesVarsTypeSortie,
@@ -3931,12 +6155,14 @@ class Correlations:
 
         # première ligne avec l'effectif total et pour chaque type
         corAscData.append(effectifs)
+        nomsL=[]
         for L in corAsc:
-            nomsL.append(L[0])
+            nomsL.append(self.nom_augmented(L[0]))
             del L[0]
             corAscData.append(L)
 
-        display(pd.DataFrame(corAscData, columns=['total'] + varsTypeSortie, index=['Effectifs'] + nomsL))
+        df=pd.DataFrame(corAscData, columns=['total'] + varsTypeSortie, index=['Effectifs'] + nomsL)
+        display(HTML(df.to_html(escape=False)))
 
     # liste du nombre de variables pour chaque type d'une édition donnée,
     # avec au début le total sur l'ensemble des types
@@ -4049,7 +6275,7 @@ class Correlations:
 
         nomsL = []
         for L in corDes:
-            nomsL.append(L[0])
+            nomsL.append(self.nom_augmented(L[0]))
             del L[0]
             corDesData.append(L)
 
@@ -4067,28 +6293,30 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
 
     # Fonction pour discriminer les corrélations d'une édition à deux autres
     # suivant les types, exprimés en pourcentages
     def show_discrimine_types_pourcent(self,
-                                  nom, discrimines, vars=[], varSauf=[],
-                                  varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
-                                  varsTypeSortie=[], varsTypeSortieSauf=[],
-                                  pasColonne=10):
-            varsDiff = self.vars_difference(discrimines[0], discrimines[1])
-            if vars:
-                vars = list(set(vars) & set(varsDiff))
-            else:
-                vars = varsDiff
+                                       nom, discrimines, vars=[], varSauf=[],
+                                       varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
+                                       varsTypeSortie=[], varsTypeSortieSauf=[],
+                                       pasColonne=10):
+        varsDiff = self.vars_difference(discrimines[0], discrimines[1])
+        if vars:
+            vars = list(set(vars) & set(varsDiff))
+        else:
+            vars = varsDiff
 
-            self.show_tableau_correlations_types_pourcent_desc(
-                nom, noms=discrimines,
-                vars=vars,
-                varSauf=set(varSauf + self.vars_innove(nom)),
-                varsTypes = varsTypes, varsTypeSauf = varsTypeSauf, varsTypesFormule = varsTypesFormule,
-                varsTypeSortie = varsTypeSortie, varsTypeSortieSauf = varsTypeSortieSauf,
-                pasColonne=pasColonne)
+        self.show_tableau_correlations_types_pourcent_desc(
+            nom, noms=discrimines,
+            vars=vars,
+            varSauf=set(varSauf + self.vars_innove(nom)),
+            varsTypes = varsTypes, varsTypeSauf = varsTypeSauf, varsTypesFormule = varsTypesFormule,
+            varsTypeSortie = varsTypeSortie, varsTypeSortieSauf = varsTypeSortieSauf,
+            pasColonne=pasColonne)
 
     def show_tableau_correlations_types_pourcent_asc(self,
                                                      nom, vars=None, varSauf=None,
@@ -4182,7 +6410,7 @@ class Correlations:
 
         nomsL = []
         for L in corAsc:
-            nomsL.append(L[0])
+            nomsL.append(self.nom_augmented(L[0]))
             del L[0]
             corAscData.append(L)
 
@@ -4200,7 +6428,9 @@ class Correlations:
             lines = res[0]
             index = res[1]
 
-        display(pd.DataFrame(lines, columns=columns, index=index))
+        df=pd.DataFrame(lines, columns=columns, index=index)
+        display(HTML(df.to_html(escape=False)))
+
 
     #####################################
     # liens directs
@@ -4271,10 +6501,12 @@ class Correlations:
                                                         varsTypesFormule=varsTypesFormule,
                                                         nomsTypes=nomsTypes, nomsTypeSauf=nomsTypeSauf)
         lines = [[self.__data[indexNom1][v] for v in resIndexesVars]]
-        resNom = [nom1 + '/' + nom2]
-        resVars = [self.__vars[i] for i in resIndexesVars]
+        resNom = [self.nom_augmented(nom1) + '/' + self.nom_augmented(nom2)]
+        resVars = [self.__vars_augmented[i] for i in resIndexesVars]
 
-        display(pd.DataFrame(lines, columns=resVars, index=resNom))
+        df=pd.DataFrame(lines, columns=resVars, index=resNom)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_liens_directs_desc(self, nom, vars=[], varSauf=[],
                                 noms=[], nomSauf=[],
@@ -4323,9 +6555,11 @@ class Correlations:
                 lines.append([prc] + line)
                 resNoms.append(self.__noms[n])
 
-        resVars = ['%'] + [self.__vars[i] for i in resIndexesVarsComplet]
+        resVars = ['%'] + [self.__vars_augmented[i] for i in resIndexesVarsComplet]
 
-        display(pd.DataFrame(list(reversed(lines)), columns=resVars, index=list(reversed(resNoms))))
+        df=pd.DataFrame(list(reversed(lines)), columns=resVars, index=list(reversed(resNoms)))
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_liens_directs_asc(self, nom, vars=[], varSauf=[],
                                noms=[], nomSauf=[],
@@ -4372,11 +6606,11 @@ class Correlations:
                 else:
                     prc = 0
                 lines.append([prc] + line)
-                resNoms.append(self.__noms[n])
+                resNoms.append(self.__noms_augmented[n])
 
-        resVars = ['%'] + [self.__vars[i] for i in resIndexesVarsComplet]
+        resVars = ['%'] + [self.__vars_augmented[i] for i in resIndexesVarsComplet]
 
-        display(pd.DataFrame(lines, columns=resVars, index=resNoms))
+        df=pd.DataFrame(lines, columns=resVars, index=resNoms)
 
     def lien_direct(self, indexNom1, indexNom2, indexVar, indexesNoms):
         if indexNom2 > indexNom1:
@@ -4460,10 +6694,12 @@ class Correlations:
                                                         nomsTypes=nomsTypes, nomsTypeSauf=nomsTypeSauf,
                                                         nomsTypesFormule=nomsTypesFormule)
         lines = [[self.__data[indexNom1][v] for v in resIndexesVars]]
-        resNom = [nom1 + '/' + nom2]
-        resVars = [self.__vars[i] for i in resIndexesVars]
+        resNom = [self.nom_augmented(nom1) + '/' + self.nom_augmented(nom2)]
+        resVars = [self.__vars_augmented[i] for i in resIndexesVars]
 
-        display(pd.DataFrame(lines, columns=resVars, index=resNom))
+        df=pd.DataFrame(lines, columns=resVars, index=resNom)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_liens_directs_desc(self, nom, vars=[], varSauf=[],
                                 noms=[], nomSauf=[],
@@ -4507,11 +6743,13 @@ class Correlations:
                 else:
                     prc = 0
                 lines.append([prc] + line)
-                resNoms.append(self.__noms[n])
+                resNoms.append(self.__noms_augmented[n])
 
-        resVars = ['%'] + [self.__vars[i] for i in resIndexesVarsComplet]
+        resVars = ['%'] + [self.__vars_augmented[i] for i in resIndexesVarsComplet]
 
-        display(pd.DataFrame(list(reversed(lines)), columns=resVars, index=list(reversed(resNoms))))
+        df=pd.DataFrame(list(reversed(lines)), columns=resVars, index=list(reversed(resNoms)))
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_liens_directs_asc(self, nom, vars=[], varSauf=[],
                                noms=[], nomSauf=[],
@@ -4559,11 +6797,11 @@ class Correlations:
                 else:
                     prc = 0
                 lines.append([prc] + line)
-                resNoms.append(self.__noms[n])
+                resNoms.append(self.__noms_augmented[n])
 
-        resVars = ['%'] + [self.__vars[i] for i in resIndexesVarsComplet]
+        resVars = ['%'] + [self.__vars_augmented[i] for i in resIndexesVarsComplet]
 
-        display(pd.DataFrame(lines, columns=resVars, index=resNoms))
+        df=pd.DataFrame(lines, columns=resVars, index=resNoms)
 
     ##########################################################################################
     ### Graphes de déviation
@@ -4949,9 +7187,11 @@ class Correlations:
         lines = [
             [self.__distance_matrice[self.indexNomToRedindex(i, indexesNoms)][self.indexNomToRedindex(j, indexesNoms)]
              for j in indexesNomsJ] for i in indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[i] for i in indexesNomsJ]
-        return pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[i] for i in indexesNomsJ]
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+
+        return HTML(df.to_html(escape=False))
 
     def show_distance_matrice_normalisee(self, nomsI=[], nomsISauf=[], nomsJ=[], nomsJSauf=[], vars=[], varSauf=[]):
         indexesNomsI = self.nomsToIndexesNoms(nomsI, nomsISauf)
@@ -4969,9 +7209,10 @@ class Correlations:
         lines = [
             [self.__distCorrelations[self.indexNomToRedindex(i, indexesNoms)][self.indexNomToRedindex(j, indexesNoms)]
              for j in indexesNomsJ] for i in indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[i] for i in indexesNomsJ]
-        display(pd.DataFrame(lines, columns=resNomsJ, index=resNomsI))
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[i] for i in indexesNomsJ]
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        display(HTML(df.to_html(escape=False)))
 
     def show_distance_matrice_pourcent(self, nomsI=[], nomsISauf=[], nomsJ=[], nomsJSauf=[], vars=[], varSauf=[]):
         indexesNomsI = self.nomsToIndexesNoms(nomsI, nomsISauf)
@@ -4989,9 +7230,11 @@ class Correlations:
         lines = [[int(round(100 * self.__distance_matrice[self.indexNomToRedindex(i, indexesNoms)][
             self.indexNomToRedindex(j, indexesNoms)] / self.__selectedDistMax)) for j in indexesNomsJ] for i in
                  indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[i] for i in indexesNomsJ]
-        display(pd.DataFrame(lines, columns=resNomsJ, index=resNomsI))
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[i] for i in indexesNomsJ]
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        display(HTML(df.to_html(escape=False)))
+
 
     def save_distance_matrice(self, nomsI=[], nomsISauf=[], nomsJ=[], nomsJSauf=[], vars=[], varSauf=[]):
         indexesNomsI = self.nomsToIndexesNoms(nomsI, nomsISauf)
@@ -5014,11 +7257,12 @@ class Correlations:
         lines = [
             [self.__distance_matrice[self.indexNomToRedindex(i, indexesNoms)][self.indexNomToRedindex(j, indexesNoms)]
              for j in indexesNomsJ] for i in indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[j] for j in indexesNomsJ]
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[j] for j in indexesNomsJ]
 
         fileName = self.__baseName + 'Dist.csv'
-        pd.DataFrame(lines, columns=resNomsJ, index=resNomsI).to_csv(fileName)
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI).to_csv(fileName)
+        display(HTML(df.to_html(escape=False)))
 
         print(
             "La matrice des distances pour la mesure d'éloignement a été enregistrée dans le fichier \"" + self.__baseName + "Dist.csv\".")
@@ -5039,11 +7283,12 @@ class Correlations:
         lines = [[int(round(100 * self.__distance_matrice[self.indexNomToRedindex(i, indexesNoms)][
             self.indexNomToRedindex(j, indexesNoms)] / self.__selectedDistMax)) for j in indexesNomsJ] for i in
                  indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[j] for j in indexesNomsJ]
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[j] for j in indexesNomsJ]
 
         fileName = self.__baseName + 'Dist.csv'
-        pd.DataFrame(lines, columns=resNomsJ, index=resNomsI).to_csv(fileName)
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI).to_csv(fileName)
+        display(HTML(df.to_html(escape=False)))
 
         print(
             "La matrice des distances en pourcentages pour la mesure d'éloignemnet a été enregistrée dans le fichier \"" + self.__baseName + "PourcentDist.csv\".")
@@ -5067,10 +7312,12 @@ class Correlations:
         except:
             self.dist_matrices(indexesNoms, indexesVars)
 
-        listNoms = [self.__noms[i] for i in indexesNoms]
+        listNoms = [self.__noms_augmented[i] for i in indexesNoms]
 
-        display(pd.DataFrame(self.distance_matrice_coordonnees(indexesNoms, indexesVars), columns=['x', 'y'],
-                             index=listNoms))
+        df=pd.DataFrame(self.distance_matrice_coordonnees(indexesNoms, indexesVars), columns=['x', 'y'],
+                             index=listNoms)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_distance_ordonnee(self, noms=[], nomSauf=[],
                                vars=[], varSauf=[],
@@ -5090,13 +7337,15 @@ class Correlations:
             self.dist_matrices(indexesNoms, indexesVars)
 
         distEtNoms = [[self.__distance_matrice[i][j],
-                       self.redindexNomToNom(j, indexesNoms) + ' - ' + self.redindexNomToNom(i, indexesNoms)] for i, j
+                       self.nom_augmented(self.redindexNomToNom(j, indexesNoms)) + ' - ' + self.nom_augmented(self.redindexNomToNom(i, indexesNoms))] for i, j
                       in np.ndindex(self.__distance_matrice.shape) if i < j and pourcent <= int(
                 round(self.__distance_matrice[i][j] * 100 / self.__selectedDistMax)) <= Pourcent]
         distEtNomsOrdonnes = sorted(distEtNoms, key=itemgetter(0), reverse=False)
         distOrdonnes = [[d, int(round(100 * d / self.__selectedDistMax))] for d, n in distEtNomsOrdonnes]
         nomsOrdonnes = [n for d, n in distEtNomsOrdonnes]
-        display(pd.DataFrame(distOrdonnes, index=nomsOrdonnes, columns=['distance', '%']))
+        df=pd.DataFrame(distOrdonnes, index=nomsOrdonnes, columns=['distance', '%'])
+        display(HTML(df.to_html(escape=False)))
+
 
     def graphe_matrice_distance(self,
                                 liens, indexesNoms, indexesVars, pourcent, Pourcent, couleursLiens):
@@ -5216,10 +7465,12 @@ class Correlations:
         lines = [
             [self.__proximite_matrice[self.indexNomToRedindex(i, indexesNoms)][self.indexNomToRedindex(j, indexesNoms)]
              for j in indexesNomsJ] for i in indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[i] for i in indexesNomsJ]
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[i] for i in indexesNomsJ]
 
-        display(pd.DataFrame(lines, columns=resNomsJ, index=resNomsI))
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        display(HTML(df.to_html(escape=False)))
+
         # return pd.DataFrame(self.__proximite_matrice, columns=self.__selectedNoms, index=self.__selectedNoms)
 
     def show_proximite_matrice_normalisee(self, nomsI=[], nomsISauf=[],
@@ -5241,9 +7492,11 @@ class Correlations:
         lines = [
             [self.__proxCorrelations[self.indexNomToRedindex(i, indexesNoms)][self.indexNomToRedindex(j, indexesNoms)]
              for j in indexesNomsJ] for i in indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[i] for i in indexesNomsJ]
-        display(pd.DataFrame(lines, columns=resNomsJ, index=resNomsI))
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[i] for i in indexesNomsJ]
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_proximite_matrice_pourcent(self, nomsI=[], nomsISauf=[],
                                         nomsJ=[], nomsJSauf=[],
@@ -5264,10 +7517,12 @@ class Correlations:
         lines = [[int(round(100 * self.__proximite_matrice[self.indexNomToRedindex(i, indexesNoms)][
             self.indexNomToRedindex(j, indexesNoms)] / self.__selectedDistMax)) for j in indexesNomsJ] for i in
                  indexesNomsI]
-        resNomsI = [self.__noms[i] for i in indexesNomsI]
-        resNomsJ = [self.__noms[j] for j in indexesNomsJ]
+        resNomsI = [self.__noms_augmented[i] for i in indexesNomsI]
+        resNomsJ = [self.__noms_augmented[j] for j in indexesNomsJ]
 
-        display(pd.DataFrame(lines, columns=resNomsJ, index=resNomsI))
+        df=pd.DataFrame(lines, columns=resNomsJ, index=resNomsI)
+        display(HTML(df.to_html(escape=False)))
+
         # return pd.DataFrame(self.__proximite_matrice, columns=self.__selectedNoms, index=self.__selectedNoms)
 
     def save_proximite_matrice(self, nomsI=[], nomsISauf=[],
@@ -5340,9 +7595,11 @@ class Correlations:
         except:
             self.prox_matrices(indexesNoms, indexesVars)
 
-        listNoms = [self.__noms[i] for i in indexesNoms]
-        display(pd.DataFrame(self.proximite_matrice_coordonnees(indexesNoms, indexesVars), columns=['x', 'y'],
-                             index=listNoms))
+        listNoms = [self.__noms_augmented[i] for i in indexesNoms]
+        df=pd.DataFrame(self.proximite_matrice_coordonnees(indexesNoms, indexesVars), columns=['x', 'y'],
+                             index=listNoms)
+        display(HTML(df.to_html(escape=False)))
+
 
     def show_proximite_ordonnee(self, noms=[], nomSauf=[],
                                 vars=[], varSauf=[],
@@ -5360,13 +7617,15 @@ class Correlations:
             self.prox_matrices(indexesNoms, indexesVars)
 
         proxEtNoms = [[self.__proximite_matrice[i][j],
-                       self.redindexNomToNom(j, indexesNoms) + ' - ' + self.redindexNomToNom(i, indexesNoms)] for i, j
+                       self.nom_augmented(self.redindexNomToNom(j, indexesNoms)) + ' - ' + self.nom_augmented(self.redindexNomToNom(i, indexesNoms))] for i, j
                       in np.ndindex(self.__proximite_matrice.shape) if i < j and Pourcent >= int(
                 round(self.__proximite_matrice[i][j] * 100 / self.__selectedDistMax)) >= pourcent]
         proxEtNomsOrdonnes = sorted(proxEtNoms, key=itemgetter(0), reverse=True)
         proxOrdonnes = [[d, int(round(100 * d / self.__selectedDistMax))] for d, n in proxEtNomsOrdonnes]
         nomsOrdonnes = [n for d, n in proxEtNomsOrdonnes]
-        display(pd.DataFrame(proxOrdonnes, index=nomsOrdonnes, columns=['proximité', '%']))
+        df=pd.DataFrame(proxOrdonnes, index=nomsOrdonnes, columns=['proximité', '%'])
+        display(HTML(df.to_html(escape=False)))
+
 
     def graphe_matrice_proximite(self, coordMat, liens, indexesNoms, indexesVars, pourcent, Pourcent, couleursLiens):
         plt.clf()
@@ -5492,7 +7751,7 @@ class Correlations:
 
     @property
     def maxProxCor(self):
-        return self.maxCor(self.__proximite_matrice)
+        pass
 
     @property
     def minProxCor(self):
@@ -5505,8 +7764,10 @@ class Correlations:
     def set_gmc_width(self, num):
         self.__gmc_width = num
 
+
     def set_gmc_height(self, num):
         self.__gmc_height = num
+
 
     @property
     def gmc_font_size(self):
@@ -5602,8 +7863,11 @@ class Correlations:
                 ligne = [r[0], r[2] - r[1]] + ligne
                 lignes.append(ligne)
 
-            columns = ['%', 'long.'] + [self.__vars[v] for v in indexesVars]
-            display(pd.DataFrame(lignes, columns=columns))
+            columns = ['%', 'long.'] + [self.__vars_augmented[v] for v in indexesVars]
+            df=pd.DataFrame(lignes, columns=columns)
+            display(HTML(df.to_html(escape=False)))
+
+
         else:
             print('Aucun résultat')
 
@@ -5759,8 +8023,10 @@ class Correlations:
             lignes.append(ligne)
             j += 1
 
-        varsL = [self.indexToVar(v) for v in indexesVars]
-        display(pd.DataFrame(lignes[:-1], columns=varsL))
+        varsL = [self.indexToVar_augmented(v) for v in indexesVars]
+        df=pd.DataFrame(lignes[:-1], columns=varsL)
+        display(HTML(df.to_html(escape=False)))
+
 
     def lisetContainsPourcent(self, liset1, liset2, indexesVars, pourcent, Pourcent):
         prc = self.pourcentLisetContains(liset1, liset2, indexesVars)
@@ -6060,8 +8326,10 @@ class Correlations:
                     lines.append(line)
 
                     columns = ['total'] + varsTypeSortie
-                    index = ['Effectif', self.__noms[n]]
-                    display(pd.DataFrame(lines, columns=columns, index=index))
+                    index = ['Effectif', self.__noms_augmented[n]]
+                    df=pd.DataFrame(lines, columns=columns, index=index)
+                    display(HTML(df.to_html(escape=False)))
+
         else:
             print(color.bold + 'Aucun résultat' + color.end)
 
@@ -6157,8 +8425,9 @@ class Correlations:
                     lines.append(line)
 
                     columns = ['total'] + varsTypeSortie
-                    index = ['Effectif', self.__noms[n]]
-                    display(pd.DataFrame(lines, columns=columns, index=index))
+                    index = ['Effectif', self.__noms_augmented[n]]
+                    df=pd.DataFrame(lines, columns=columns, index=index)
+                    display(HTML(df.to_html(escape=False)))
         else:
             print(color.bold + 'Aucun résultat' + color.end)
 
@@ -6390,7 +8659,7 @@ class Correlations:
         plt.show()
 
         # Tableau
-        vars = [self.__vars[i] for i in indexesVars]
+        vars = [self.__vars_augmented[i] for i in indexesVars]
 
         distributions_blk = []
         # remplace les 0 par des blancs
@@ -6399,7 +8668,7 @@ class Correlations:
 
         lines = distributions_blk
         columns = vars
-        index = noms
+        index = self.noms_augmented(noms)
 
         if pasColonne:
             res = self.repeteIndex(pasColonne, lines, columns, index)
