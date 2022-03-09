@@ -1,9 +1,6 @@
-'''Introduction
-
- Le programme ci-dessous offre quelques fonctions pour l'analyse et la représentation des corrélations entre les textes d'un corpus présentées dans un tableau.
- pour activer les widgets, exécuter avant le lancement de jupyter :
-jupyter nbextension enable --py widgetsnbextension --sys-prefix'''
-# # Le programme
+'''
+ This program offers various functions for the analysis of a corpus from a Jupyter Notebook.'''
+#jupyter nbextension enable --py widgetsnbextension --sys-prefix
 
 from __future__ import print_function
 import numpy as np
@@ -66,11 +63,6 @@ except:
     print("     noms_base_complete")
     print("     vars_base")
     print("     vars_base_first")
-
-if __name__ == "__main__":
-    lock = thread.allocate_lock()
-    thread.start_new_thread(myfunction, ("Thread #: 1", 2, lock))
-    thread.start_new_thread(myfunction, ("Thread #: 2", 2, lock))
 
 
 class Data:
@@ -228,13 +220,13 @@ class Data:
     ######################################################################################
     try:
         def show_data(self,
-                      noms=None, nomSauf=None, vars=None, varSauf=None,
+                      noms: List[str] = None, nomSauf=None, vars=None, varSauf=None,
                       varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
                       nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
                       pasColonne=10, pasLigne=10,
                       domaine: str = 'all', corpus: str = 'all',
                       values: bool = True, citations: bool = False, width: str = ''):
-            """Display the array of walues for the selected names and variables."""
+            """Display the array of values for the selected names and variables."""
 
             indexes = getIndexes(self, noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule,
                                  vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule,
@@ -265,6 +257,7 @@ class Data:
         def show_noms(self,
                       noms=[], nomSauf=[],
                       nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=''):
+            """Display the selected names."""
 
             indexesNoms = getIndexesNoms(self, noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
             show_noms(self, indexesNoms)
@@ -291,33 +284,35 @@ class Data:
                       pourcent=pourcent)
 
         def nomsDesc(self, nom):
+            """List of the names below the given name (included)."""
             return nomsDesc(self, nom)
 
         def nomsDecsStrict(self, nom):
+            """List of the names below the given name (excluded)."""
             return nomsDescStrict(self, nom)
 
         def nomsAsc(self, nom):
+            """List of the names above the given name (included)."""
             return nomsAsc(self, nom)
 
         def nomsAscStrict(self, nom):
+            """List of the names above the given name (excluded)."""
             return nomsAscStrict(self, nom)
 
         def varsAvant(self, var):
+            """List of the variable before the given variable (included)."""
             return varsAvant(self, var)
 
         def varsApres(self, var):
+            """List of the variable after  the given variable (included)."""
             return varsApres(self, var)
 
-        def typeToIndexesVars(self, tps):
-            return typeToIndexesVars(self, tps)
-
-        def typeToIndexesNoms(self, tps):
-            return typeToIndexesNoms(self, tps)
-
         def show_var_types(self, var):
+            """Display the types of the given variable."""
             show_var_types(self, var)
 
         def show_nom_types(self, nom):
+            """Display the types of the given name."""
             show_nom_types(self, nom)
 
         def show_noms_type(self, tp):
@@ -338,7 +333,6 @@ class Data:
             indexesVars = getIndexesVars(self, vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
             return get_vars(self, indexesVars)
 
-        # Liste des variables sur lesquelles une éditions diffère d'une liste d'éditions
         def vars_difference(self, nom1, nom2,
                             vars=None, varSauf=None,
                             varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
@@ -348,16 +342,17 @@ class Data:
             indexes = getIndexes(self, [nom1, nom2], [], [], [], '',
                                  vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule,
                                  'all', domaine)
+            """Variables on which two names differ"""
 
             return [self.vars[v] for v in vars_difference(self, indexNom1, indexNom2, indexes['vars'])]
 
-        # Liste des variables sur lesquelles une éditions diffère d'une liste d'éditions
         def vars_difference_relative(self,
                                      nom, noms=None, nomSauf=None,
                                      vars=None, varSauf=None,
                                      varsTypes=None, varsTypeSauf=None, varsTypesFormule='',
                                      nomsTypes=None, nomsTypeSauf=None, nomsTypesFormule='',
                                      domaine='all', corpus='all'):
+            """Variables on which one name differs from the selected names"""
 
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule,
@@ -372,6 +367,7 @@ class Data:
                                      varsTypes=[], varsTypeSauf=[], varsTypesFormule='',
                                      nomsTypes=[], nomsTypeSauf=[],
                                      corpus='all', domaine='all'):
+            """Display the values of the variables on which one name differs from the selected names"""
 
             indexNom = nomToIndex(self, (nom))
             indexes = getIndexes(self, noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule,
@@ -397,7 +393,7 @@ class Data:
 
         def vars_defs(self, str, vars=[], varSauf=[],
                       varsTypes=[], varsTypeSauf=[], varsTypesFormule=''):
-
+            """List of variables with definitions."""
             indexesVars = getIndexesVars(self, vars, varSauf, varsTypes, varsTypeSauf, varsTypesFormule)
             return vars_defs(self, str, indexesVars)
 
@@ -1927,12 +1923,12 @@ class Data:
             return findVarsValue(self,
                                  indexNom, cars, indexesVars)
 
-        def nomsVarsValues(self, varsValues=[], noms=[],
+        def nomsVarsValues(self, varsValues, noms=[],
                            nomSauf=[], nomsTypes=[], nomsTypeSauf=[], nomsTypesFormule=[]):
 
             indexesNoms = getIndexesNoms(self, noms, nomSauf, nomsTypes, nomsTypeSauf, nomsTypesFormule)
 
-            return nomsVarsValues(self, indexesNoms, varsValues=varsValue)
+            return indexesNomsVarsValues(self, varsValues,  indexesNoms)
 
         def nomsVarsContientValues(self,
                                    varsValues,
