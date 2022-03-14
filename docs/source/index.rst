@@ -10,8 +10,17 @@ Welcome to nbp's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-api.rst
 
+
+API Reference
+=============
+
+.. automodule:: corpusanalysis
+
+.. autoclass:: corpusanalysis.Data
+    :members:
+
+    .. automethod:: show_data
 
 Indices and tables
 ==================
