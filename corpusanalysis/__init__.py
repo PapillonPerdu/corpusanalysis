@@ -1,1 +1,0 @@
-from .nbp import Data

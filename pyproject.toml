@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "corpusanalysis"
+name = "nbp"
 version = "0.1.0"
 description = "For primary and secondary sources analysis."
 authors = ["Alain Herreman"]
@@ -20,4 +20,3 @@ tabulate = "^0.8.9"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-

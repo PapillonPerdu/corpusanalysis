@@ -3,14 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to nbp's documentation!
+Corpus Analysis Documentation
 ===============================
+**Corpus Analysis** is a Python library for corpus analysis...
+
+.. note:: this is a note.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
-
-api.rst
+   
+   installation
+   mains
+   names
+   variables
+   values
+   quotations
+   definitions
+   types
+   plots
 
 
 Indices and tables
