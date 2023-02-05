@@ -1330,11 +1330,11 @@ class Data:
             else:
                 indexesNoms = indexes['noms']
             show_decomposition(self,
-                           indexNom, indexesNoms, indexes['vars'],
-                           indexesNomsBaseIncomplete,
-                           variantes=variantes,
-                           max=max, percent=percent, Percent=Percent,
-                           pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
+                               indexNom, indexesNoms, indexes['vars'],
+                               indexesNomsBaseIncomplete,
+                               variantes=variantes,
+                               max=max, percent=percent, Percent=Percent,
+                               pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
         def show_values(self, names: List[str] = [], namesEx: List[str] = [],
                         vars: List[str] = [], varsEx: List[str] = [],
@@ -1359,7 +1359,7 @@ class Data:
                                 dir='both',
                                 corpus: str = 'all', domain: str = 'all',
                                 percent: int = 0, Percent: int = 100):
-            """Display the names wiche values are included, to a certain percent, in those of namesGenerators"""
+            """Display the names whitch values are included, to a certain percent, in those of namesGenerators"""
             # todo:à revoir...
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -1377,25 +1377,27 @@ class Data:
                 indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
             else:
                 indexesNoms = indexes['noms']
-
-
-
-            show_names_included(self, indexesGenerators['noms'],indexesNoms, indexes['vars'],
+            # suppression des générateurs de la liste des noms possibles
+            indexesNoms = list(set(indexesNoms).difference(indexesGenerators['noms']))
+            show_names_included(self, indexesGenerators['noms'], indexesNoms, indexes['vars'],
                                 percent=percent, Percent=Percent)
 
         def show_names_included_types(self,
                                       namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
                                       namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
-                                      namesGeneratorsTypesFormula: List[str] = [], vars: List[str] = [],
+                                      namesGeneratorsTypesFormula: List[str] = [],
+                                      vars: List[str] = [],
                                       varsEx: List[str] = [],
                                       names: List[str] = [], namesEx: List[str] = [],
                                       varsTypes: List[str] = [], varsTypesEx: List[str] = [],
                                       varsTypesFormula: str = '',
                                       namesTypes: List[str] = [], namesTypesEx: List[str] = [],
                                       namesTypesFormula: str = '',
+                                      dir='both',
                                       corpus: str = 'all', domain: str = 'all',
                                       percent: int = 0, Percent: int = 100,
                                       effectif: int = 0, Effectif: int = 0,
+                                      effectifType: int = 0, EffectifType: float = float('inf'),
                                       varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
             # todo:docstring
 
@@ -1414,36 +1416,107 @@ class Data:
                 indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
             else:
                 indexesNoms = indexes['noms']
+
+            #suppression des générateurs de la liste des noms possibles
+            indexesNoms=list(set(indexesNoms).difference(indexesGenerators['noms']))
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
-            show_names_included_types(self, indexesGenerators['noms'],indexesNoms,
-                                      indexes['vars'],indexesVarsTypeSortie,
+            show_names_included_types(self, indexesGenerators['noms'], indexesNoms,
+                                      indexes['vars'], indexesVarsTypeSortie,
                                       percent=percent, Percent=Percent,
-                                      effectif=effectif, Effectif=Effectif)
+                                      effectif=effectif, Effectif=Effectif,
+                                      effectifType=effectifType, EffectifType=EffectifType)
 
-        def show_names_included_types_percent(self, namesGenerating: List[str] = [], namesGeneratingEx: List[str] = [],
-                                              vars: List[str] = [], varsEx: List[str] = [],
-                                              names: List[str] = [], namesEx: List[str] = [],
-                                              varsTypes: List[str] = [], varsTypesEx: List[str] = [],
-                                              varsTypesFormula: str = '',
-                                              namesTypes: List[str] = [], namesTypesEx: List[str] = [],
-                                              namesTypesFormula: str = '',
-                                              percent: int = 0, Percent: int = 100,
-                                              effectif: int = 0, Effectif: int = 0,
-                                              corpus='all', domain='all',
-                                              varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
+        def show_names_included_types(self,
+                                      namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
+                                      namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
+                                      namesGeneratorsTypesFormula: List[str] = [],
+                                      vars: List[str] = [],
+                                      varsEx: List[str] = [],
+                                      names: List[str] = [], namesEx: List[str] = [],
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
+                                      dir='both',
+                                      corpus: str = 'all', domain: str = 'all',
+                                      percent: int = 0, Percent: int = 100,
+                                      effectifType: int = 0, EffectifType: float = float('inf'),
+                                      varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
             # todo:docstring
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
+            indexesGenerators = getIndexes(self, namesGenerators, namesGeneratorsEx, namesGeneratorsTypes,
+                                           namesGeneratorsTypesEx, namesGeneratorsTypesFormula,
+                                           vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                           corpus, domain)
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < min(indexesGenerators['noms'])]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
+            else:
+                indexesNoms = indexes['noms']
+
+            # suppression des générateurs de la liste des noms possibles
+            indexesNoms = list(set(indexesNoms).difference(indexesGenerators['noms']))
+
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
-            show_names_included_types_percent(self, indexes['noms'], indexes['vars'], indexesVarsTypeSortie,
-                                              namesGenerating=namesGenerating, namesGeneratingEx=namesGeneratingEx,
+            show_names_included_types(self, indexesGenerators['noms'], indexesNoms,
+                                              indexes['vars'], indexesVarsTypeSortie,
                                               percent=percent, Percent=Percent,
-                                              effectif=effectif, Effectif=Effectif)
+                                              effectifType=effectifType, EffectifType=EffectifType)
+
+        def show_names_included_types_percent(self,
+                                      namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
+                                      namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
+                                      namesGeneratorsTypesFormula: List[str] = [],
+                                      vars: List[str] = [],
+                                      varsEx: List[str] = [],
+                                      names: List[str] = [], namesEx: List[str] = [],
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
+                                      dir='both',
+                                      corpus: str = 'all', domain: str = 'all',
+                                      percent: int = 0, Percent: int = 100,
+                                      percenType:int =0, PercenType: int = 100,
+                                      effectifType: int = 0, EffectifType: float = float('inf'),
+                                      varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
+            # todo:docstring
+
+            indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
+                                 vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                 corpus, domain)
+
+            indexesGenerators = getIndexes(self, namesGenerators, namesGeneratorsEx, namesGeneratorsTypes,
+                                           namesGeneratorsTypesEx, namesGeneratorsTypesFormula,
+                                           vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                           corpus, domain)
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < min(indexesGenerators['noms'])]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
+            else:
+                indexesNoms = indexes['noms']
+
+            # suppression des générateurs de la liste des noms possibles
+            indexesNoms = list(set(indexesNoms).difference(indexesGenerators['noms']))
+
+            indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
+
+            show_names_included_types_percent(self, indexesGenerators['noms'], indexesNoms,
+                                              indexes['vars'], indexesVarsTypeSortie,
+                                              percent=percent, Percent=Percent,
+                                              percenType=percenType, PercenType=PercenType,
+                                              effectifType=effectifType, EffectifType=EffectifType)
+
 
         def show_names_basis_complete(self, namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
                                       nomsBaseIncomplete=[],
@@ -1526,7 +1599,7 @@ class Data:
                             variantes: List[str] = [],
                             domain: str = 'all', corpus: str = 'all'):
             """Display the most common values, and for each name the percentage of its values strEqual to the most common values."""
-            #TODO : Traiter le cas où deux valeurs on même popularité.
+            # TODO : Traiter le cas où deux valeurs on même popularité.
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
@@ -2166,5 +2239,4 @@ class Data:
 
     except NameError as e:
         print(e)
-    except:
-        print(e)
+

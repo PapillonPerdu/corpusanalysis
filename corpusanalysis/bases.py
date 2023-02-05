@@ -1,4 +1,3 @@
-
 from .basics import *
 from .correlations import corr
 
@@ -12,19 +11,23 @@ except:
     print("     vars_base")
     print("     vars_base_first")
 
+
 # source : https://stackoverflow.com/questions/31581425
 def getCombinations(lst, max):
     for L in range(1, max + 1):
         for subset in itertools.combinations(lst, L):
             yield list(subset)
 
+
 ##################################################################################
 # méthodes sur les listes d'ensembles (liset)
 ##################################################################################"
 
 def liset(L):
-   liset = [{i} for i in L]
-   return liset
+    liset = [{i} for i in L]
+    return liset
+
+
 def sum_set(self, indexesNoms, indexesVars):
     res = [set([self.data[n][i] \
                 for n in indexesNoms \
@@ -38,10 +41,10 @@ def difference_liset(liset1, liset2, indexesVars):
     return res
 
 
-def show_sum_set(self, indexesNoms,indexesVars):
+def show_sum_set(self, indexesNoms, indexesVars):
+    res = sum_set(self, indexesNoms, indexesVars)
+    show_liset(self, res, indexesVars)
 
-    res = sum_set(self,indexesNoms, indexesVars)
-    show_liset(self,res, indexesVars)
 
 def lisetEmpty(liset, indexesVars):
     test = True
@@ -94,9 +97,6 @@ def lisetIncludesPourcent(self, ls, l, indexesVars, pourcent, Pourcent):
     return Pourcent >= prc >= pourcent
 
 
-
-
-
 def pourcentLisetIncludes(self, ls, l, indexesVars):
     sum = 0
     total = 0
@@ -139,15 +139,15 @@ def vars_incompletes(self, liset1, liset2, indexesVars):
 #######################################################################################################
 
 def decomposition(self,
-              indexNom, indexesNomsBaseIncomplete, indexesVars, indexesNoms, max, pourcent, Pourcent,
+                  indexNom, indexesNomsBaseIncomplete, indexesVars, indexesNoms, max, pourcent, Pourcent,
                   variantes=[]):
-    #List of ids of names completing indexesNomsBaseIncomplete.
+    # List of ids of names completing indexesNomsBaseIncomplete.
     decomp = []
     prcs = []
     indexesNomsReste = list(set(indexesNoms) - set(indexesNomsBaseIncomplete))
-    if max == 0 : max = len(indexesNoms)
+    if max == 0: max = len(indexesNoms)
     for indexesN in tqdm(sorted(getCombinations(indexesNomsReste,
-                                               max - len(indexesNomsBaseIncomplete)), key=len)):
+                                                max - len(indexesNomsBaseIncomplete)), key=len)):
 
         ListeL = [self.data[i] for i in sorted(indexesN + indexesNomsBaseIncomplete)]
         prc = sumEqualPourcent(ListeL, self.data[indexNom], indexesVars, variantes=variantes)
@@ -163,13 +163,12 @@ def show_decomposition(self,
                        indexesNomsBaseIncomplete,
                        variantes=[],
                        max=0, percent=100, Percent=100,
-                       pasColonne=10, pasLigne=10,decoration=True):
-
+                       pasColonne=10, pasLigne=10, decoration=True):
     if indexNom in indexesNoms: indexesNoms.remove(indexNom)
     if max == 0:
         print("Maximum names in decomposition is not limited (max=0)")
     else:
-        print("Maximum names in decomposition limited to {} (max={}).".format(max,max))
+        print("Maximum names in decomposition limited to {} (max={}).".format(max, max))
 
     resDecomp = decomposition(self, indexNom,
                               indexesNomsBaseIncomplete,
@@ -180,12 +179,12 @@ def show_decomposition(self,
                               Percent,
                               variantes=variantes)
     prcs, decomp = resDecomp
-    prcs,decomp = zip(*sorted(zip(prcs,decomp), reverse=True))
-    prcsUniq = sorted(list(set(prcs)), reverse = True)
+    prcs, decomp = zip(*sorted(zip(prcs, decomp), reverse=True))
+    prcsUniq = sorted(list(set(prcs)), reverse=True)
     prcs = list(prcs)
     decomp = list(decomp)
 
-    #Pour une chaîne ascendante de décompositions ayant le même prc
+    # Pour une chaîne ascendante de décompositions ayant le même prc
     # on garde seulement la plus petite.
     prcsRed = []
     decompRed = []
@@ -193,28 +192,28 @@ def show_decomposition(self,
     while prcsUniq:
         prc = prcsUniq.pop(0)
         decomPerc = []
-        #décompositions avec le même prc
+        # décompositions avec le même prc
         while prcs and prc == prcs[0]:
             decomPerc.append(decomp.pop(0))
             prcs.pop(0)
 
-        #suppression des décompositions de pourcentage égale à une plus petite
+        # suppression des décompositions de pourcentage égale à une plus petite
         decomPerc.sort(key=len)
         decomPercRed = []
         for dec in decomPerc:
-            if not includes(dec,decomPercRed):
+            if not includes(dec, decomPercRed):
                 decomPercRed.append(dec)
             else:
-                decompExcluded.append([prc,dec])
+                decompExcluded.append([prc, dec])
 
-        for dec in decomPercRed :
+        for dec in decomPercRed:
             prcsRed.append(prc)
             decompRed.append(dec)
 
     prcs = prcsRed
     decomp = decompRed
     resVars = ['%'] + [self.vars_augmented[i] for i in indexesVars]
-    print('Variables : ',str(len(resVars)))
+    print('Variables : ', str(len(resVars)))
 
     selectedNameLine = [''] + [self.data[indexNom][j] for j in indexesVars]
     if not len(decomp) == 0:
@@ -237,20 +236,23 @@ def show_decomposition(self,
                         ligne.append(self.data[i][j])
                 lines.append(ligne)
 
-            #On ordonne par prc décroissants
-            prcsLines, indexesNamesCompletOrdered,lines = zip(*sorted(zip(prcsLines, indexesNamesComplet, lines), reverse=True))
+            # On ordonne par prc décroissants
+            prcsLines, indexesNamesCompletOrdered, lines = zip(
+                *sorted(zip(prcsLines, indexesNamesComplet, lines), reverse=True))
             indexesNamesCompletOrdered = list(indexesNamesCompletOrdered)
             lines = list(lines)
             lines = [selectedNameLine[:]] + lines
             index = [self.noms_augmented[indexNom] if decoration else self.noms[indexNom]] + \
                     [self.noms_augmented[i] if decoration else self.noms[i] for i in indexesNamesCompletOrdered]
             columns = ['%'] + [self.vars_augmented[v] if decoration else self.vars[v] for v in indexesVars]
-            print('len columns : '+ str(len(columns)))
+            print('len columns : ' + str(len(columns)))
             print('')
-            print(color.bold + str(prcTotal) + "% : " + ', '.join([self.noms[i] for i in indexesNamesComplet]) + color.end)
-            printLines(lines, columns=columns, index=index,pasColonne=pasColonne,pasLigne=pasLigne)
+            print(color.bold + str(prcTotal) + "% : " + ', '.join(
+                [self.noms[i] for i in indexesNamesComplet]) + color.end)
+            printLines(lines, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
     else:
         print('Aucune décomposition.')
+
 
 # def show_decomposition_types(self,
 #                        indexNom, indexesNoms, indexesVars,
@@ -266,12 +268,11 @@ def show_decomposition(self,
 
 #########################################################################################################"
 
-def noms_base_complete(self,indexesNoms,indexesVars,  nomsGenerateurs=[], nomsGenerateurSauf=[], nomsBaseIncomplete=[],
+def noms_base_complete(self, indexesNoms, indexesVars, nomsGenerateurs=[], nomsGenerateurSauf=[], nomsBaseIncomplete=[],
                        pourcent=100, Pourcent=100, max=0):
-
-    indexesNomsGenerateurs = nomsToIndexesNoms(self,nomsGenerateurs, nomsGenerateurSauf)
+    indexesNomsGenerateurs = nomsToIndexesNoms(self, nomsGenerateurs, nomsGenerateurSauf)
     if nomsBaseIncomplete:
-        indexesNomsBaseIncomplete = nomsToIndexesNoms(self,nomsBaseIncomplete, [])
+        indexesNomsBaseIncomplete = nomsToIndexesNoms(self, nomsBaseIncomplete, [])
     else:
         indexesNomsBaseIncomplete = []
 
@@ -291,9 +292,9 @@ def noms_base_complete(self,indexesNoms,indexesVars,  nomsGenerateurs=[], nomsGe
             # print('indexes : ',indexesNoms)
             liset = sum_set(self, indexes + indexesNomsBaseIncomplete, indexesVars)
             # print(liset)
-            if lisetContainsPourcent(self,lisetComplet, liset, indexesVars, pourcent, Pourcent):
+            if lisetContainsPourcent(self, lisetComplet, liset, indexesVars, pourcent, Pourcent):
                 dec = sorted(indexesNomsBaseIncomplete + indexes)
-                varsIncompletes = vars_incompletes(self,lisetComplet, liset, indexesVars)
+                varsIncompletes = vars_incompletes(self, lisetComplet, liset, indexesVars)
                 decomp.append(dec)
                 res.append([dec, varsIncompletes])
 
@@ -303,7 +304,6 @@ def noms_base_complete(self,indexesNoms,indexesVars,  nomsGenerateurs=[], nomsGe
 def show_names_basis_complete(self, indexesNoms, indexesVars, namesGenerating=[], namesGeneratingEx=[],
                               nomsBaseIncomplete=[],
                               percent=100, Percent=100, max=0):
-
     indexesNomsGenerateurs = nomsToIndexesNoms(self,
                                                namesGenerating,
                                                namesGeneratingEx)
@@ -321,7 +321,8 @@ def show_names_basis_complete(self, indexesNoms, indexesVars, namesGenerating=[]
     print('  Variables : ' + str(len(indexesVars)))
     show_liset(self, lisetComplet, indexesVars)
 
-    resultats = noms_base_complete(self, indexesNoms, indexesVars, nomsGenerateurs=namesGenerating, nomsGenerateurSauf=namesGeneratingEx, \
+    resultats = noms_base_complete(self, indexesNoms, indexesVars, nomsGenerateurs=namesGenerating,
+                                   nomsGenerateurSauf=namesGeneratingEx, \
                                    nomsBaseIncomplete=nomsBaseIncomplete,
                                    pourcent=percent, Pourcent=Percent, max=max)
 
@@ -338,9 +339,8 @@ def show_names_basis_complete(self, indexesNoms, indexesVars, namesGenerating=[]
         print(' ')
 
 
-def show_values(self, indexesNoms,indexesVars):
-
-    lisetComplet = sum_set(self,indexesNoms, indexesVars)
+def show_values(self, indexesNoms, indexesVars):
+    lisetComplet = sum_set(self, indexesNoms, indexesVars)
 
     nomsG = [self.noms[i] for i in indexesNoms]
     print(color.bold + 'Complet array :' + color.end)
@@ -366,35 +366,33 @@ def noms_inclus(self, indexesNomsGenerateurs, indexesNoms, indexesVars,
     return res
 
 
-
 def show_names_included(self, indexesGenerators, indexesNoms, indexesVars,
                         percent=0, Percent=100):
-
     lisetComplet = sum_set(self, indexesGenerators, indexesVars)
     nomsG = [self.noms[i] for i in indexesGenerators]
     print(color.bold + 'Complet array :' + color.end)
     if len(indexesGenerators) == len(self.noms):
         print('  Generators :  All')
     else:
-        print('  Generators :',', '.join(nomsG))
+        print('  Generators :', ', '.join(nomsG))
     print('  Variables :', len(indexesVars))
 
     show_liset(self, lisetComplet, indexesVars)
 
     indexesNomsInclude = noms_inclus(self,
-                                     indexesGenerators, indexesNoms,indexesVars,
+                                     indexesGenerators, indexesNoms, indexesVars,
                                      lisetComplet,
                                      percent=percent, Percent=Percent)
 
     if indexesNomsInclude:
         for n in indexesNomsInclude:
             l = list(self.data[n])
-            prc = round(pourcentLisetIncludes(self,lisetComplet, l, indexesVars))
+            prc = round(pourcentLisetIncludes(self, lisetComplet, l, indexesVars))
             print('')
             print(color.bold + self.noms[n] + ' : ' + str(prc) + '%' + color.end)
             for nn in indexesGenerators:
-                corTotal=corr(self, nn, n, indexesVars)
-                print(self.noms[nn],':', corTotal['percent'])
+                corTotal = corr(self, nn, n, indexesVars)
+                print(self.noms[nn], ':', corTotal['percent'])
 
             if not prc == 100:
                 l = [l[v] for v in indexesVars]
@@ -406,9 +404,8 @@ def show_names_included(self, indexesGenerators, indexesNoms, indexesVars,
 
 # Comme précédemment, mais les résultats sont donnés par types
 def show_names_included_types(self, indexesGenerators, indexesNoms,
-                              indexesVars, indexesVarsTypeSortie,                              percent=0, Percent=100,
-                              effectif=0, Effectif=float('inf'),
-                              effectifType=0,EffectifType=float('inf')):
+                              indexesVars, indexesVarsTypeSortie, percent=0, Percent=100,
+                              effectifType=0, EffectifType: float = float('inf')):
     lisetComplet = sum_set(self, indexesGenerators, indexesVars)
     nomsG = [self.noms[i] for i in indexesGenerators]
     print(color.bold + 'Complet array :' + color.end)
@@ -430,54 +427,61 @@ def show_names_included_types(self, indexesGenerators, indexesNoms,
         for n in indexesNomsInclude:
             lines = []
             l = list(self.data[n])
-            prc = round(pourcentLisetIncludes(self,lisetComplet, l, indexesVars))
+            prc = round(pourcentLisetIncludes(self, lisetComplet, l, indexesVars))
             print('')
             print(color.bold + self.noms[n] + ' : ' + str(prc) + '%' + color.end)
             for nn in indexesGenerators:
-                corTotal=corr(self, nn, n, indexesVars)
-                print(self.noms[nn],':', corTotal['percent'])
+                corTotal = corr(self, nn, n, indexesVars)
+                print('   '+self.noms[nn], ':', str(corTotal['percent'])+'%')
 
             if not prc == 100:
                 # inutile d'afficher la différence si 100% des valeurs sont les mêmes
                 l = [l[v] for v in indexesVars]
+                #liset des valeurs où les variables sont différentes
                 lisetDiff = difference_liset(liset(l), lisetComplet, indexesVars)
-
                 # indexes des variables où il y a une différence
-                indexesVarsDiff = lisetToIndexesVars(self,lisetDiff, indexesVars)
+                indexesVarsDiff = lisetToIndexesVars(self, lisetDiff, indexesVars)
+                #dict. nomType: liste indexesVars différentes
 
                 collTypes = indexesVarsToDictTypesIndexesVars(self,
-                    indexesVarsDiff,
-                    indexesVarsTypeSortie)
-                effectifs = effectifsTypes(self,[n], indexesVars, indexesVarsTypeSortie)
+                                                              indexesVarsDiff,
+                                                              indexesVarsTypeSortie)
+                #liste effectif total et effectifs de chaque type
+                effectifsTps = effectifsTypes(self, [n], indexesVars, indexesVarsTypeSortie)
+                total=effectifsTps.pop(0)
 
-                if effectif or Effectif:
-                    # restriction de indexesVarsTypesSortie
-                    if Effectif == float('inf'): Effectif = len(indexesVars)
-                    indexesVarsTypeSortie = [indexesVarsTypeSortie[i] \
-                                             for i in range(len(indexesVarsTypeSortie)) \
-                                             if EffectifType >= effectifs[i + 1] >= effectifType]
-                    total = effectifs[0]
-                    effectifs.pop(0)
-                    effectifs = [e for e in effectifs if Effectif >= e >= effectif]
-                    effectifs.insert(0, total)
+                if effectifType or EffectifType:
+                    # restriction de indexesVarsTypesSortie en fonction de l'effectif
+                    if EffectifType == float('inf'): EffectifType = len(indexesVars)
 
-                varsTypeSortie = [self.vars_types_types[i] for i in indexesVarsTypeSortie]
+                    indexesVarsTypeSortieRed = []
+                    effectifsTpsSortieRed =[]
+                    for i in range(len(indexesVarsTypeSortie)):
+                        eff = effectifsTps[i]
+                        if EffectifType >= eff >= effectifType:
+                            indexesVarsTypeSortieRed.append(indexesVarsTypeSortie[i])
+                            effectifsTpsSortieRed.append(eff)
+
+                varsTypeSortieRed = [self.vars_types_types[i] for i in indexesVarsTypeSortieRed]
+
                 # première ligne avec l'effectif total et pour chaque type
-                lines.append(effectifs)
+                lines.append([total]+effectifsTpsSortieRed)
                 line = []
-                for indexTp in indexesVarsTypeSortie:
+
+                #liste des nombres de valeurs manquantes pour chaque type du nom considéré
+                for indexTp in indexesVarsTypeSortieRed:
                     try:
                         tp = self.vars_types_types[indexTp]
                         val = len(collTypes[tp])
-                        if val == 0: val = ''
+                        if val == 0: val = '-'
                         line.append(val)
                     except:
-                        line.append('')
+                        line.append('-')
 
-                line = [collTotal(self,collTypes)] + line
+                line = [collTotal(self, collTypes)] + line
                 lines.append(line)
 
-                columns = ['total'] + varsTypeSortie
+                columns = ['total'] + varsTypeSortieRed
                 index = ['Effectif', self.noms_augmented[n]]
                 printLines(lines, columns=columns, index=index)
 
@@ -486,82 +490,79 @@ def show_names_included_types(self, indexesGenerators, indexesNoms,
 
 
 # Comme précédemment, mais les résultats sont donnés par types et en pourcentage
-def show_names_included_types_percent(self, indexesNoms, indexesVars, indexesVarsTypeSortie,
-                                      namesGenerating=[], namesGeneratingEx=[],
-                                      percent=0, Percent=100,
-                                      effectif=0, Effectif=0):
-
-    indexesNomsGenerateurs = nomsToIndexesNoms(self, namesGenerating, namesGeneratingEx)
-
-    lisetComplet = sum_set(self,indexesNomsGenerateurs, indexesVars)
-    nomsG = [self.noms[i] for i in indexesNomsGenerateurs]
-    print(color.bold + 'Tableau complet :' + color.end)
-    print('  Générateurs :')
-    if len(indexesNomsGenerateurs) == len(self.noms):
-        print('  Tous')
+def show_names_included_types_percent(self, indexesGenerators, indexesNoms,
+                              indexesVars, indexesVarsTypeSortie, percent=0, Percent=100,
+                              effectifType: int =0, EffectifType: float = float('inf'),
+                              percenType=0, PercenType=100):
+    lisetComplet = sum_set(self, indexesGenerators, indexesVars)
+    nomsG = [self.noms[i] for i in indexesGenerators]
+    print(color.bold + 'Complet array :' + color.end)
+    if len(indexesGenerators) == len(self.noms):
+        print(color.bold + 'Generators :  All' + color.end)
     else:
-        print('  ' + ', '.join(nomsG))
-
-    show_liset(self,lisetComplet, indexesVars)
+        print(color.bold + 'Generators :'+ ', '.join(nomsG)+ color.end)
+    print('Variables :', len(indexesVars))
 
     indexesNomsInclude = noms_inclus(self,
-                                     indexesNomsGenerateurs, indexesVars, indexesNoms,
+                                     indexesGenerators, indexesNoms, indexesVars,
                                      lisetComplet,
                                      percent=percent, Percent=Percent)
 
     if indexesNomsInclude:
         print("Les nombres donnés sont les pourcentages de variables du type dont les valeurs manquent.")
+        effectifsTps = effectifsTypes(self, indexesGenerators, indexesVars, indexesVarsTypeSortie)
+
         for n in indexesNomsInclude:
             lines = []
             l = list(self.data[n])
-            prc = round(pourcentLisetIncludes(self,lisetComplet, l, indexesVars))
+            prc = round(pourcentLisetIncludes(self, lisetComplet, l, indexesVars))
             print('')
             print(color.bold + self.noms[n] + ' : ' + str(prc) + '%' + color.end)
+            for nn in indexesGenerators:
+                corTotal = corr(self, nn, n, indexesVars)
+                print('   '+self.noms[nn], ':', str(corTotal['percent'])+'%')
+
             if not prc == 100:
                 # inutile d'afficher la différence si 100% des valeurs sont les mêmes
                 l = [l[v] for v in indexesVars]
                 lisetDiff = difference_liset(liset(l), lisetComplet, indexesVars)
                 # indexes des variables où il y a une différence
-                indexesVarsDiff = lisetToIndexesVars(self,lisetDiff, indexesVars)
+                indexesVarsDiff = lisetToIndexesVars(self, lisetDiff, indexesVars)
                 collTypes = indexesVarsToDictTypesIndexesVars(self,
-                    indexesVarsDiff,
-                    indexesVarsTypeSortie)
+                                                              indexesVarsDiff,
+                                                              indexesVarsTypeSortie)
 
-                effectifs = effectifsTypes(self,[n], indexesVars, indexesVarsTypeSortie)
 
-                if effectif or Effectif:
+                if effectifType or EffectifType:
                     # restriction de indexesVarsTypesSortie
-                    if Effectif == 0: Effectif = len(self.vars)
-                    indexesVarsTypeSortie = [indexesVarsTypeSortie[i] \
-                                             for i in range(len(indexesVarsTypeSortie)) \
-                                             if Effectif >= effectifs[i + 1] >= effectif]
-                    varsTypeSortie = [self.vars_types_types[i] for i in indexesVarsTypeSortie]
-                    total = effectifs[0]
-                    effectifs.pop(0)
-                    effectifs = [e for e in effectifs if Effectif >= e >= effectif]
-                    effectifs.insert(0, total)
+                    if EffectifType == float('inf'): EffectifType = len(indexesVars)
+
+                    indexesVarsTypeSortieRed = []
+                    effectifsTpsSortieRed = []
+                    line = []  # liste des prcts de variables différentes
+                    for i in range(len(indexesVarsTypeSortie)):
+                        eff = effectifsTps[i+1]
+                        try:
+                            tp = self.vars_types_types[indexesVarsTypeSortie[i]] #nom du type
+                            val = len(collTypes[tp])
+                            prc = round(val / eff * 100)
+                        except:
+                            prc = 0
+                        if EffectifType >= eff >= effectifType and \
+                                percenType <= prc <= PercenType  :
+                            indexesVarsTypeSortieRed.append(indexesVarsTypeSortie[i])
+                            effectifsTpsSortieRed.append(eff)
+                            if prc :
+                                line.append(str(prc) + '%')
+                            else :
+                                line.append('-')
+
+                varsTypeSortieRed = [self.vars_types_types[i] for i in indexesVarsTypeSortieRed]
 
                 # première ligne avec l'effectif total et pour chaque type
-                lines.append(effectifs)
-                line = []
-                for i in range(len(indexesVarsTypeSortie)):
-                    indexTp = indexesVarsTypeSortie[i]
-                    totalType = effectifs[i + 1]
-                    try:
-                        tp = self.vars_types_types[indexTp]
-                        val = len(collTypes[tp])
-                        prc = round(val / totalType * 100)
-                    except:
-                        prc = 0
-                    if prc:
-                        line.append(str(prc) + '%')
-                    else:
-                        line.append('')
+                lines=[[effectifsTps[0]]+effectifsTpsSortieRed,[collTotal(self, collTypes)] +line]
 
-                line = [collTotal(self,collTypes)] + line
-                lines.append(line)
-
-                columns = ['total'] + varsTypeSortie
+                columns = ['total'] + varsTypeSortieRed
                 index = ['Effectif', self.noms_augmented[n]]
                 printLines(lines, columns=columns, index=index)
     else:
@@ -573,16 +574,16 @@ def show_names_included_types_percent(self, indexesNoms, indexesVars, indexesVar
 def noms_image(self, indexesVars, indexesNoms):
     res = []
     for n in indexesNoms:
-        nomsImage = indexes_like(self,n, indexesNoms, indexesVars, 100)
+        nomsImage = indexes_like(self, n, indexesNoms, indexesVars, 100)
         if nomsImage == [n]:
             res.append(n)
     return res
 
 
-def vars_base(self,indexesNoms,indexesVars, varsBaseIncomplete=[],
+def vars_base(self, indexesNoms, indexesVars, varsBaseIncomplete=[],
               max=0):
     if not varsBaseIncomplete == []:
-        indexesVarsBaseIncomplete = varsToIndexesVars(self,varsBaseIncomplete, [])
+        indexesVarsBaseIncomplete = varsToIndexesVars(self, varsBaseIncomplete, [])
     else:
         indexesVarsBaseIncomplete = []
 
@@ -600,11 +601,10 @@ def vars_base(self,indexesNoms,indexesVars, varsBaseIncomplete=[],
     return res
 
 
-def vars_base_first(self, indexesNoms, indexesVars,varsBaseIncomplete=[],
+def vars_base_first(self, indexesNoms, indexesVars, varsBaseIncomplete=[],
                     max=0):
-
     if not varsBaseIncomplete == []:
-        indexesVarsBaseIncomplete = varsToIndexesVars(self,varsBaseIncomplete, [])
+        indexesVarsBaseIncomplete = varsToIndexesVars(self, varsBaseIncomplete, [])
     else:
         indexesVarsBaseIncomplete = []
 
@@ -624,7 +624,6 @@ def vars_base_first(self, indexesNoms, indexesVars,varsBaseIncomplete=[],
 
 def show_vars_base_first(self, indexesNoms, indexesVars, varsIncompleteBasis=[],
                          max=0):
-
     indexes = vars_base_first(self, indexesNoms, indexesVars, varsBaseIncomplete=varsIncompleteBasis,
                               max=max)
 
