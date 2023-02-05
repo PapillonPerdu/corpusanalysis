@@ -161,7 +161,7 @@ def orbitesReduction(orbites, mots, motSauf, min, max):
                 ligne = []
                 for i in indexesVars:
                     if r[1] <= i <= r[2]:
-                        if self.equal(self.__data[indexNom1][i], self.__data[indexNom2][i]):
+                        if self.strEqual(self.__data[indexNom1][i], self.__data[indexNom2][i]):
                             ligne.append(self.__data[indexNom1][i])
                         else:
                             ligne.append(self.__data[indexNom1][i] + '/' + self.__data[indexNom2][i])
@@ -216,7 +216,7 @@ def orbitesReduction(orbites, mots, motSauf, min, max):
         M = min([len(indexesVars) - 1, i + n])
         sum = 0
         for j in range(m, M + 1):
-            if self.equal(L1[indexesVars[j]], L2[indexesVars[j]]):
+            if self.strEqual(L1[indexesVars[j]], L2[indexesVars[j]]):
                 sum += 1
 
         return sum / max([M - m + 1, 1])

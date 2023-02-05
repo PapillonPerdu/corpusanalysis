@@ -21,6 +21,7 @@ Corpus Analysis Documentation
    quotations
    definitions
    types
+   bases
    plots
 
 

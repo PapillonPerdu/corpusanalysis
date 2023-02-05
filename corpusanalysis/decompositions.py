@@ -96,7 +96,7 @@ def show_decomposition(self,
                 prc = listsEqualPourcent(self,self.data[indexNom], self.data[i], indexesVars)
                 ligne = [prc]
                 for j in indexesVars:
-                    if self.equal(self.data[i][j], self.data[indexNom][j]):
+                    if self.strEqual(self.data[i][j], self.data[indexNom][j]):
                         ligne.append('')
                     else:
                         ligne.append(self.data[i][j])

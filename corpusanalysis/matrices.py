@@ -7,7 +7,8 @@
 
 from scipy.spatial import distance_matrix
 import matplotlib.pyplot as plt
-from sklearn import manifold
+#from sklearn import manifold
+#TODO je n'arrive pas à le charger dans l'environnement sqlite.
 import networkx as nx
 from operator import itemgetter
 
@@ -20,7 +21,7 @@ def dist(self, L1, L2, indexesVars):
     for i in indexesVars:
         if not L1[i] in self.exclus and not L2[i] in self.exclus:
             poids = self.poids[i] if self.poidsExist else 1
-            dist += (not equal(L1[i], L2[i])) * poids
+            dist += (not strEqual(L1[i], L2[i])) * poids
     return dist
 
 
@@ -30,7 +31,7 @@ def prox(self, L1, L2, indexesVars):
     for i in indexesVars:
         if not L1[i] in self.exclus and not L2[i] in self.exclus:
             poids = self.poids[i] if self.poidsExist else 1
-            prox += (equal(L1[i], L2[i])) * poids
+            prox += (strEqual(L1[i], L2[i])) * poids
     return prox
 
     # calcule la matrice des distances

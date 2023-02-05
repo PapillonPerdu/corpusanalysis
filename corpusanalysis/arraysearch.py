@@ -69,7 +69,7 @@ def indexesNomsVarsValues(self, varsValues, indexesNoms, variantes=[]):
     for n in indexesNoms:
         boole = false
         for i in range(len(varsValues)):
-            if equal(self.data[n, varToIndex(self,varsValues[i][0])], varsValues[i][1],variantes):
+            if strEqual(self.data[n, varToIndex(self, varsValues[i][0])], varsValues[i][1], variantes):
                 boole = true
                 break
         if boole:

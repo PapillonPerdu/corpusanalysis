@@ -44,7 +44,7 @@ def show_intervals(self, indexNom1, indexNom2, indexesNoms, indexesVars,
             ligne = []
             for i in indexesVars:
                 if r[1] <= i <= r[2]:
-                    if equal(self.data[indexNom1][i], self.data[indexNom2][i]):
+                    if strEqual(self.data[indexNom1][i], self.data[indexNom2][i]):
                         ligne.append(self.data[indexNom1][i])
                     else:
                         ligne.append(self.data[indexNom1][i] + '/' + self.data[indexNom2][i])

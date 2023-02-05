@@ -17,16 +17,20 @@ except:
     print("     vars_base_first")
 
 
+def equalbasic(self, indexName1, indexName2, indexVar):
+    boole = strEqual(self.data[indexName1][indexVar], self.data[indexName2][indexVar])
+    return boole
 
         # Tableau descendant des corrélations
 
-def corr(self,indexNom1, indexNom2, indexesVars,variantes=[]):
+
+def corrNew(self,indexNom1, indexNom2, indexesVars,variantes=None,equalfunc=equalbasic):
     """        :return: {
                 effectif : number of variables where both indexNom1 and indeNom2 have positive values
                 effectif1 : number of positive values of indexNom1.
                  effectif2: number of positive values of indexNom2.
-                 equal : number of equal values (a & b = b & c)
-                 percent : percentage of equal values : effectif/commun*100 arrondi à la première décimale
+                 strEqual : number of strEqual values (a & b = b & c)
+                 percent : percentage of strEqual values : effectif/commun*100 arrondi à la première décimale
         """
     correlation = 0
     effectif = 0
@@ -34,7 +38,7 @@ def corr(self,indexNom1, indexNom2, indexesVars,variantes=[]):
         if not self.data[indexNom1][v] in self.exclus and \
                 not self.data[indexNom2][v] in self.exclus:
                 effectif += 1
-                if equal(self.data[indexNom1][v], self.data[indexNom2][v],variantes):
+                if equalfunc(self,indexNom1, indexNom2, v):
                     correlation += 1
     effectif1 = len([i for i in indexesVars if self.data[indexNom1][i] not in self.exclus])
     effectif2 = len([i for i in indexesVars if self.data[indexNom2][i] not in self.exclus])
@@ -42,7 +46,31 @@ def corr(self,indexNom1, indexNom2, indexesVars,variantes=[]):
         percent = round(correlation/effectif*100)
     except:
         percent = 0
-    return {'effectif':effectif,'effectif1':effectif1,'effectif2':effectif2,'equal':correlation,'percent':percent}
+    return {'effectif':effectif,'effectif1':effectif1,'effectif2':effectif2,'strEqual':correlation,'percent':percent}
+
+def corr(self,indexNom1, indexNom2, indexesVars,variantes=None):
+    """        :return: {
+                effectif : number of variables where both indexNom1 and indeNom2 have positive values
+                effectif1 : number of positive values of indexNom1.
+                 effectif2: number of positive values of indexNom2.
+                 strEqual : number of strEqual values (a & b = b & c)
+                 percent : percentage of strEqual values : effectif/commun*100 arrondi à la première décimale
+        """
+    correlation = 0
+    effectif = 0
+    for v in indexesVars:
+        if not self.data[indexNom1][v] in self.exclus and \
+                not self.data[indexNom2][v] in self.exclus:
+                effectif += 1
+                if strEqual(self.data[indexNom1][v], self.data[indexNom2][v], variantes=variantes):
+                    correlation += 1
+    effectif1 = len([i for i in indexesVars if self.data[indexNom1][i] not in self.exclus])
+    effectif2 = len([i for i in indexesVars if self.data[indexNom2][i] not in self.exclus])
+    try:
+        percent = round(correlation/effectif*100)
+    except:
+        percent = 0
+    return {'effectif':effectif,'effectif1':effectif1,'effectif2':effectif2,'strEqual':correlation,'percent':percent}
 
 def tableau_correlations(self,
                          indexNom, indexesNoms, indexesVars,
@@ -55,8 +83,8 @@ def tableau_correlations(self,
         if not n == indexNom:
             l = difference(self, n, indexNom, indexesVars,variantes=variantes)
             # ajouts des stats en début de liste
-            corTotal = corr(self,indexNom, n, indexesVars,variantes)
-            l = [self.noms[n], corTotal['percent'], corTotal['effectif'], corTotal['equal']] + l
+            corTotal = corr(self,indexNom, n, indexesVars,variantes=variantes)
+            l = [self.noms[n], corTotal['percent'], corTotal['effectif'], corTotal['strEqual']] + l
             if percent <= corTotal['percent'] <= Percent\
                     and \
                     effectif <= corTotal['effectif'] <= Effectif :
@@ -90,7 +118,7 @@ def show_discrimine(self,
     #indexesVars = sorted(list(set(indexesVars) - set(indexesVarsInnove)))
     indexesVars = indexesVars_discrimine(self,
                     indexNom, discrimines, indexesVars,
-                    variantes=[])
+                    variantes=None)
 
     show_correlations(self, indexNom, discrimines, indexesVars,
                       variantes=variantes, pasColonne=pasColonne,decoration=decoration)
@@ -100,7 +128,7 @@ def show_correlations(self,
                       indexNom, indexesNoms, indexesVars,
                       percent=0, Percent=100,
                       effectif=0, Effectif=float('inf'),
-                      variantes = [],
+                      variantes = None,
                       pasColonne=10, pasLigne=10,
                       decoration=True):
     #on se restreint aux variables sur lesquelles indexNom a des valeurs non excluses
@@ -134,7 +162,7 @@ def show_correlations(self,
 
 def tableau_correlations_types(self,
                                indexNom, indexesNoms, indexesVars, indexesVarsTypeSortie,
-                               variantes=[],
+                               variantes=None,
                                effectif=0, Effectif=float('inf'),
                                percent=0, Percent=100,
                                effectifType=0, EffectifType=float('inf')):
@@ -152,11 +180,11 @@ def tableau_correlations_types(self,
                     indexesVarsTp = indexVarsTypeToIndexesVars(self,t,indexesVars)
                     cor = corr(self,indexNom,n,indexesVarsTp)
                     if effectifType <= cor['effectif'] <= EffectifType:
-                        val = cor['equal']
+                        val = cor['strEqual']
                         line.append(val)
                     else:
                         line.append('')
-                line = [self.noms[n], corTotal['percent'], corTotal['effectif'], corTotal['equal']] + line
+                line = [self.noms[n], corTotal['percent'], corTotal['effectif'], corTotal['strEqual']] + line
                 lines.append(line)
 
 
@@ -303,7 +331,6 @@ def tableau_correlations_types_percent(self,
 
     return lines_sorted
 
-
 def show_correlations_types(self,
                             indexNom, indexesNoms, indexesVars,
                             indexesVarsTypeSortie,
@@ -351,6 +378,8 @@ def show_correlations_types(self,
     printLines(corData, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
 
 
+#def corVarsToTypes(indexName,indexesVars, indexesVarsType, equals=equals) :
+
 # liste du nombre de variables pour chaque type d'une édition donnée,
 # avec au début le total sur l'ensemble des types
 def effectifsTypesNom(self,
@@ -359,6 +388,7 @@ def effectifsTypesNom(self,
                 [totalVarsDefiniesTypeNom(self, indexNom, indexesVars, t) for t in
                  indexesVarsTypes]
     return effectifs
+
 
 
 # liste du nombre de variables pour chaque type d'une liste d'éditions donnée,
@@ -442,7 +472,7 @@ def plot_intervals(self, indexNom1, indexNom2, indexesVars, longueur,variantes=[
     L2 = self.data[indexNom2]
 
     def fun(xList, yList, L1, L2, indexesVars):
-        res = [listsEqualPourcent(L1, L2, indexesVars[x:y + 1],variantes) for x, y in zip(xList, yList)]
+        res = [listsEqualPourcent(L1, L2, indexesVars[x:y + 1],variantes=variantes) for x, y in zip(xList, yList)]
 
         return res
 

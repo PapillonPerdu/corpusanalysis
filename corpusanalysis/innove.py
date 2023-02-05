@@ -15,7 +15,7 @@ except:
 def indexesVars_data_pourcent(self,indexNom,indexesNoms,indexesVars,
                         variantes=[],
                        pourcent=0, Pourcent=100):
-    """List of the percentages of equal values of a name among the selected names"""
+    """List of the percentages of strEqual values of a name among the selected names"""
 
     indexesVars = indexesVarsDefiniesNom(self,indexNom, indexesVars)
 
@@ -48,7 +48,7 @@ def show_data_percent(self, indexNom, indexesNoms, indexesVars,
                       variantes=[],
                       percent=0, Percent=100,
                       pasColonne=10, pasLigne=10):
-    """Displays the percentage of a name's values equal to those of a list of names."""
+    """Displays the percentage of a name's values strEqual to those of a list of names."""
     indexesVars = indexesVarsDefiniesNom(self,indexNom, indexesVars)
 
     if indexNom in indexesNoms: indexesNoms.remove(indexNom)
@@ -77,7 +77,7 @@ def show_data_percent(self, indexNom, indexesNoms, indexesVars,
 def indexesNoms_data_pourcent(self,indexNom,indexesNoms,indexesVars,
                         variantes=[],
                        pourcent=0, Pourcent=100):
-    """Displays the percentage of the selected  names whose values are equal to the value of name on the selected variables."""
+    """Displays the percentage of the selected  names whose values are strEqual to the value of name on the selected variables."""
     indexesVars = indexesVarsDefiniesNom(self,indexNom, indexesVars)
 
     if indexNom in indexesNoms: indexesNoms.remove(indexNom)
@@ -89,7 +89,7 @@ def indexesNoms_data_pourcent(self,indexNom,indexesNoms,indexesVars,
         prc = round(100 * total / len(indexesNoms))
         if Pourcent >= prc >= pourcent:
             for n in indexesNoms:
-                if equal(self.data[n][v], self.data[indexNom][v]):
+                if strEqual(self.data[n][v], self.data[indexNom][v]):
                     resNoms.append(n)
 
     return list(set(resNoms))

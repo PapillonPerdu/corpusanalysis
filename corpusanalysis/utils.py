@@ -62,7 +62,9 @@ def reduceVariante(str,variantes) :
 
 # Ex. :
 # a & b = b & d est vrai
-def equal(str1, str2,variantes=[]):
+def strEqual(str1, str2, variantes=None):
+    if variantes is None:
+        variantes = []
     str1 = reduceVariante(str(str1),variantes)
     str2 = reduceVariante(str(str2),variantes)
     str1 = str1.replace(" ", "")
@@ -73,7 +75,9 @@ def equal(str1, str2,variantes=[]):
     return len(inter) > 0
 
 
-def equalStrict(str1, str2,variantes=[]):
+def strEqualStrict(str1, str2, variantes=None):
+    if variantes is None:
+        variantes = []
     str1 = reduceVariante(str(str1),variantes)
     str2 = reduceVariante(str(str2),variantes)
     str1 = str1.replace(" ", "")
@@ -82,12 +86,14 @@ def equalStrict(str1, str2,variantes=[]):
 
 
 # test d'égalité entre deux listes à un pourcentage entier donné pour une liste d'indexes
-def listsEqual(L1, L2, indexesVars, variantes=[], precision=100):
+def listsEqual(L1, L2, indexesVars, variantes=None, precision=100):
+    if variantes is None:
+        variantes = []
     if (type(precision) != int): precision = 100
     sum = 0
     if indexesVars:
         for i in indexesVars:
-            if (equal(L1[i], L2[i],variantes)): sum += 1
+            if (strEqual(L1[i], L2[i], variantes)): sum += 1
         return sum / len(indexesVars) * 100 >= precision
     else:
         return False
@@ -98,7 +104,7 @@ def listsEqual(L1, L2, indexesVars, variantes=[], precision=100):
 def listsEqualPourcent(L1, L2, indexesVars,variantes=[]):
     sum = 0
     for i in indexesVars:
-        if (equal(L1[i], L2[i],variantes)): sum += 1
+        if (strEqual(L1[i], L2[i], variantes)): sum += 1
     try:
         return round(sum / len(indexesVars) * 100)
     except:
@@ -107,12 +113,14 @@ def listsEqualPourcent(L1, L2, indexesVars,variantes=[]):
 
 # fait la somme d'une liste de listes et et retourne le pourcentage d'égalité
 # avec une liste donnée
-def sumEqualPourcent(ListeL, L, indexesVars,variantes=[]):
+def sumEqualPourcent(ListeL, L, indexesVars,variantes=None):
+    if variantes is None:
+        variantes = []
     sum = 0
     for i in indexesVars:
         ok = False
         for l in ListeL:
-            if equal(l[i], L[i],variantes):
+            if strEqual(l[i], L[i], variantes):
                 ok = True
                 break
         if ok: sum += 1
@@ -127,7 +135,7 @@ def sumEqualPourcentTest(ListeL, L, indexesVars, pourcent,variantes=[]):
     for i in indexesVars:
         ok = False
         for l in ListeL:
-            if equal(l[i], L[i],variantes):
+            if strEqual(l[i], L[i], variantes):
                 ok = True
                 break
         if ok: sum += 1

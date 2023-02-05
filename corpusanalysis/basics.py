@@ -173,6 +173,10 @@ def replaceLines(lines,replace):
     newLines=[[l if not l in values else replace[values.index(l)][1] for l in line] for line in lines]
     return newLines
 
+def printArray(array):
+    df = pd.DataFrame(array)
+    display(HTML(df.to_html(escape=False,bold_rows=True,render_links=True)))
+
 def printLines(lines, columns=[],index=[], pasColonne=0, pasLigne=0, width='50px',
                replaceValues=[], replaceNames=[], replaceVars=[],
                export = False) :
@@ -712,7 +716,7 @@ def communs(self,
     for v in indexesVars:
         if not self.data[indexNom1][v] in self.exclus and \
                 not self.data[indexNom2][v] in self.exclus and \
-                equal(self.data[indexNom1][v], self.data[indexNom2][v]):
+                strEqual(self.data[indexNom1][v], self.data[indexNom2][v]):
             comp.append(self.data[indexNom2][v])
         else:
             comp.append('')
@@ -726,7 +730,7 @@ def communsStrict(self,
     for k in indexesVars:
         if not self.data[indexNom1][k] in self.exclus and \
                 not self.data[indexNom2][k] in self.exclus and \
-                equalStrict(self.data[indexNom1][k], self.data[indexNom2][k], variantes):
+                strEqualStrict(self.data[indexNom1][k], self.data[indexNom2][k], variantes):
             comp.append(reduceVariante(self.data[indexNom2][k], variantes))
         else:
             comp.append('')
@@ -740,7 +744,7 @@ def difference(self,
     for k in indexesVars:
         if not self.data[indexNom1][k] in self.exclus and \
                 not self.data[indexNom2][k] in self.exclus and \
-                not equal(self.data[indexNom1][k], self.data[indexNom2][k],variantes):
+                not strEqual(self.data[indexNom1][k], self.data[indexNom2][k], variantes):
             diff.append(self.data_augmented[indexNom1][k])
         else:
             diff.append('')
@@ -754,7 +758,7 @@ def differenceStrict(self,
     for k in indexesVars:
         if not self.data[indexNom1][k] in self.exclus and \
                 not self.data[indexNom2][k] in self.exclus and \
-                not equalStrict(self.data[indexNom1][k], self.data[indexNom2][k],variantes):
+                not strEqualStrict(self.data[indexNom1][k], self.data[indexNom2][k], variantes):
             diff.append(self.data_augmented[indexNom1][k])
         else:
             diff.append('')
@@ -880,7 +884,7 @@ def indexesVarsCommunStrict(self,
     for k in indexesVars:
         if not self.data[indexNom1][k] in self.exclus and \
                 not self.data[indexNom2][k] in self.exclus and \
-                equalStrict(self.data[indexNom1][k], self.data[indexNom2][k]):
+                strEqualStrict(self.data[indexNom1][k], self.data[indexNom2][k]):
             com.append(k)
 
     return com
@@ -890,7 +894,7 @@ def indexesVarsDifferenceStrict(self,
                                 indexNom1, indexNom2, indexesVars):
     diff = []
     for k in indexesVars:
-        if not equalStrict(self.data[indexNom1][k], self.data[indexNom2][k]):
+        if not strEqualStrict(self.data[indexNom1][k], self.data[indexNom2][k]):
             diff.append(k)
 
     return diff
@@ -1175,7 +1179,7 @@ def prox(L1, L2, poids, variantes=[]):
     prox = 0
     for i in range(len(L1)):
         if L1[i] != '*' and L2[i] != '*' and L1[i] != '?' and L2[i] != '?':
-            prox += (equal(L1[i], L2[i], variantes)) * poids[i]
+            prox += (strEqual(L1[i], L2[i], variantes)) * poids[i]
     return prox
 
 
@@ -1188,7 +1192,7 @@ def vars_relative_difference(self, indexNom, indexesNoms, indexesVars, variantes
     for i in indexesVars:
         eq = False
         for l in ListeL:
-            if equal(l[i], self.data[indexNom][i],variantes):
+            if strEqual(l[i], self.data[indexNom][i], variantes):
                 eq = True
                 break
         if not eq: indexesVarsDiff.append(i)
@@ -1211,7 +1215,7 @@ def vars_relative_sum(self, indexNom, indexesNoms, indexesVars, variantes=[]):
     for i in indexesVars:
         eq = False
         for l in ListeL:
-            if equal(l[i], self.data[indexNom][i],variantes):
+            if strEqual(l[i], self.data[indexNom][i], variantes):
                 eq = True
                 break
         if eq: indexesVarsSum.append(i)
@@ -1290,13 +1294,13 @@ def equalVals(self, indexNom, indexesVars, values,variantes=[]):
     :param indexNom:
     :param indexesVars:
     :param values:
-    :return: [percentage of values of indexNom equal to values, ['' if equal, value if different]]
+    :return: [percentage of values of indexNom strEqual to values, ['' if strEqual, value if different]]
     '''
 
     total = 0
     diff = []
     for i in range(len(indexesVars)):
-        if equal(self.data[indexNom][indexesVars[i]], values[i], variantes):
+        if strEqual(self.data[indexNom][indexesVars[i]], values[i], variantes):
             diff.append('')
             total += 1
         else:

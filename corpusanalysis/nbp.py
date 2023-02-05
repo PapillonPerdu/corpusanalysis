@@ -1,56 +1,25 @@
 # jupyter nbextension enable --py widgetsnbextension --sys-prefix
 
 from __future__ import print_function
-import numpy as np
-import pandas as pd
-from sympy import *
-import html
-import networkx as nx
-import matplotlib.pyplot as plt
-from scipy.spatial import distance_matrix
-from sklearn import manifold
-from matplotlib.collections import LineCollection
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
-import re
-import sys
-import operator
-from operator import itemgetter
-import itertools
-from mpl_toolkits.mplot3d import axes3d
-import collections
-from collections import defaultdict
-import ipywidgets as widgets
-from ipywidgets import interact, interactive, fixed, interact_manual, Layout
-from ipywidgets import Layout, Button, Box, FloatText, Textarea, Dropdown, Label, IntSlider
-from IPython.display import display, HTML
-import tabulate
-import os
+
+# from sklearn import manifold
 from typing import *
 
-from .csvfiles import load_csv
-from .basics import *
-from .innove import *
-from .quotations import *
-from .defs import *
-from .types import *
-from .modalbox import *
-from .corpus import *
-from .bases import *
-from .write import *
-from .correlations import *
-from .repartition import *
-from .coherence import *
-from .graphes import *
-from .sql import *
-from .rules import *
-
-# from .lexique import *
-from .optimisation import *
-from .matrices import *
 # from .interactif import *
 # from .distribution import *
 from .arraysearch import *
+from .bases import *
+from .coherence import *
+from .corpus import *
+from .csvfiles import load_csv
+from .graphes import *
+from .matrices import *
+# from .lexique import *
+from .optimisation import *
+from .quotations import *
+from .repartition import *
+from .rules import *
+from .write import *
 
 try:
     from tqdm.notebook import tqdm
@@ -184,7 +153,7 @@ class Data:
         self.distMax = len(self.vars)
         self.selectedDistMax = len(self.vars)
 
-        self.maxData = 100*100 # Au-delà, un avertissement est envoyé
+        self.maxData = 100 * 100  # Au-delà, un avertissement est envoyé
 
         self.yes = ['yes', 'y', 'Yes', 'Y', 'Oui', 'O', 'oui', 'o']
         self.nuls = ['', ' ', '  ', '-', '?']  # valeurs manquantes
@@ -226,15 +195,15 @@ class Data:
     try:
         def show_data(self,
                       names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
-                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                      namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
-                      pasColonne:int = 5, pasLigne:int = 5,
+                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                      pasColonne: int = 5, pasLigne: int = 5,
                       domain: str = 'all', corpus: str = 'all',
                       values: bool = True, citations: bool = False, width: str = '',
                       variantes: List[str] = [],
-                      decoration:bool = True,
+                      decoration: bool = True,
                       replaceValues: List[str] = [], replaceNames: List[str] = [], replaceVars: List[str] = [],
-                      export = False):
+                      export=False):
             """Display the values for the selected names and variables."""
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -243,20 +212,19 @@ class Data:
             show_data(self, indexes['noms'], indexes['vars'], variantes=variantes,
                       pasColonne=pasColonne, pasLigne=pasLigne,
                       values=values, citations=citations, width=width, decoration=decoration,
-                      replaceValues=replaceValues,replaceNames=replaceNames,replaceVars=replaceVars,
-                      export = export )
-
+                      replaceValues=replaceValues, replaceNames=replaceNames, replaceVars=replaceVars,
+                      export=export)
 
         def show_vars(self,
                       vars: List[str] = [], varsEx: List[str] = [],
-                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display the selected variables."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             show_vars(self, indexesVars)
 
         def show_names(self,
                        names: List[str] = [], namesEx: List[str] = [],
-                       namesTypes: List[str] = [], namesTypeEx: List[str] = [], namesTypesFormula:str = ''):
+                       namesTypes: List[str] = [], namesTypeEx: List[str] = [], namesTypesFormula: str = ''):
             """Display the selected names."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypeEx, namesTypesFormula)
             show_names(self, indexesNoms)
@@ -303,11 +271,10 @@ class Data:
             """List of names between two names."""
             return interNames(self, name1=name1, name2=name2)
 
-
         def vars_difference(self, name1, name2,
-                            vars: List[str] = [], varsEx: List[str] = [],variantes: List[str]=[],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                            domain:str = 'all'):
+                            vars: List[str] = [], varsEx: List[str] = [], variantes: List[str] = [],
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            domain: str = 'all'):
             """List of variables on which two names are different."""
             indexNom1 = nomToIndex(self, (name1))
             indexNom2 = nomToIndex(self, (name2))
@@ -315,46 +282,48 @@ class Data:
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  'all', domain)
 
-            return [self.vars[v] for v in vars_difference(self, indexNom1, indexNom2, indexes['vars'],variantes=variantes)]
+            return [self.vars[v] for v in
+                    vars_difference(self, indexNom1, indexNom2, indexes['vars'], variantes=variantes)]
 
         def vars_relative_difference(self,
                                      name, names: List[str] = [], namesEx: List[str] = [],
-                                     vars: List[str] = [], varsEx: List[str] = [],variantes: List[str] = [],
-                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                     namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
-                                     domain:str = 'all', corpus:str = 'all'):
+                                     vars: List[str] = [], varsEx: List[str] = [], variantes: List[str] = [],
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                     namesTypesFormula: str = '',
+                                     domain: str = 'all', corpus: str = 'all'):
             """List of variables on which a name differs from a list of names"""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
-            return vars_relative_difference(self, indexNom, indexes['noms'], indexes['vars'],variantes=variantes)
+            return vars_relative_difference(self, indexNom, indexes['noms'], indexes['vars'], variantes=variantes)
 
         def show_relative_difference(self,
                                      name, names: List[str] = [], namesEx: List[str] = [],
                                      vars: List[str] = [], varsEx: List[str] = [], variantes: List[str] = [],
-                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str ='',
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                     namesTypesFormula: str = '',
                                      pasColonne=10,
-                                     corpus:str = 'all', domain:str = 'all'):
+                                     corpus: str = 'all', domain: str = 'all'):
             """Display the values of a name on the variables on which it differs from a list of names"""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
-            varsDiff = vars_relative_difference(self,indexNom, indexes['noms'], indexes['vars'], variantes=variantes)
-            self.show_data(names=[name],vars=varsDiff, pasColonne=pasColonne)
-
+            varsDiff = vars_relative_difference(self, indexNom, indexes['noms'], indexes['vars'], variantes=variantes)
+            self.show_data(names=[name], vars=varsDiff, pasColonne=pasColonne)
 
         def vars_relative_sum(self,
                               nom, names: List[str] = [], namesEx: List[str] = [],
                               vars: List[str] = [], varsEx: List[str] = [],
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                               variantes: List[str] = [],
-                              corpus:str = 'all', domain:str = 'all'):
-            """List of variables on which a name is equal to one of the names in a list of names."""
+                              corpus: str = 'all', domain: str = 'all'):
+            """List of variables on which a name is strEqual to one of the names in a list of names."""
             indexNom = nomToIndex(self, (nom))
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -363,20 +332,20 @@ class Data:
             return vars_relative_sum(self, indexNom, indexes['noms'], indexes['vars'], variantes=variantes)
 
         def vars_defs(self, str, vars: List[str] = [], varsEx: List[str] = [],
-                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """List of variables with a definition."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             return vars_defs(self, str, indexesVars)
 
         def show_vars_with_def(self, vars: List[str] = [], varsEx: List[str] = [],
-                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display the variables with a definition."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             vars_defs = list(self.vars_defs_dic.keys())
             show_vars(self, [v for v in indexesVars if self.vars[v] in vars_defs])
 
         def show_vars_defs(self, vars: List[str] = [], varsEx: List[str] = [],
-                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display variables with their definition."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             columns = [self.vars_augmented[v] for v in indexesVars]
@@ -384,9 +353,8 @@ class Data:
             df = pd.DataFrame(defs, columns=columns)
             display(HTML(df.to_html(escape=False)))
 
-
         def show_vars_without_def(self, vars: List[str] = [], varsEx: List[str] = [],
-                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display variables without definition."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             show_vars(self, [v for v in indexesVars if not self.vars_defs_dic[self.vars[v]]])
@@ -417,31 +385,32 @@ class Data:
             show_vars_types(self, vars_types_sans_def(self, indexesVarsTypes))
 
         def names_defs(self, str, names: List[str] = [], namesEx: List[str] = [],
-                       namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                       namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """List of names with a definition."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             return names_defs(self, str, indexesNoms)
 
         def names_without_def(self, names: List[str] = [], namesEx: List[str] = [],
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """List of names without a definition."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             return names_without_def(self, indexesNoms)
 
         def show_names_without_def(self, names: List[str] = [], namesEx: List[str] = [],
-                                   namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                   namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                   namesTypesFormula: str = ''):
             """Display the names without a definition."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             show_names(self, [n for n in indexesNoms if not self.noms_defs_dic[self.noms[n]]])
 
         def names_with_def(self, names: List[str] = [], namesEx: List[str] = [],
-                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """List of names with a definition."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             return names_with_def(self, indexesNoms)
 
         def show_names_with_def(self, names: List[str] = [], namesEx: List[str] = [],
-                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """Display the names with a definition."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             show_names(self, noms_avec_def(self, indexesNoms))
@@ -450,7 +419,7 @@ class Data:
             """Display the names types."""
             indexesNomsTypes = nomsTypesToIndexesTypes(self, namesTypes, namesTypesEx)
             show_names_types(self, [], indexesNomsTypes,
-                             pasColonne = 10, pasLigne= 10)
+                             pasColonne=10, pasLigne=10)
 
         def names_types_without_def(self, namesTypes: List[str] = [], namesTypesEx: List[str] = []):
             """List of name types without a definition."""
@@ -461,20 +430,19 @@ class Data:
             """Display the name types without a definition."""
             indexesNomsTypes = nomsTypesToIndexesTypes(self, namesTypes, namesTypesEx)
             show_names_types(self, noms_types_sans_def(self, indexesNomsTypes),
-                             pasColonne = 10, pasLigne = 10)
+                             pasColonne=10, pasLigne=10)
 
         def names_types_with_def(self, namesTypes: List[str] = [], namesTypesEx: List[str] = []):
             """List of name types with a definition."""
             indexesNomsTypes = nomsTypesToIndexesTypes(self, namesTypes, namesTypesEx)
             return names_types_with_def(self, indexesNomsTypes,
-                                       pasColonne = 10, pasLigne = 10)
+                                        pasColonne=10, pasLigne=10)
 
         def show_names_types_with_def(self, namesTypes: List[str] = [], namesTypesEx: List[str] = []):
             """Display name types with a definition."""
             indexesNomsTypes = nomsTypesToIndexesTypes(self, namesTypes, namesTypesEx)
             show_names_types(self, names_types_with_def(self, indexesNomsTypes),
-                             pasColonne = 10, pasLigne = 10)
-
+                             pasColonne=10, pasLigne=10)
 
         def varsExt(self, regVars):
             """List of variables checking a list of regVars"""
@@ -494,11 +462,9 @@ class Data:
             # todo : à faire
             return varsTypesExt(self, regNames)
 
-
-
         def show_missing(self, name,
                          vars: List[str] = [], varsEx: List[str] = [],
-                         varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                         varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display variables for which a name has no assigned values."""
             indexNom = nomToIndex(self, (name))
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
@@ -508,30 +474,28 @@ class Data:
             # Needed for nomsTypesFormula
             return typeToIndexesNoms(self, tp)
 
-
-
         def typeToIndexesVars(self, tp):
-            #Needed for varsTypesFormula
-            return typeToIndexesVars(self,tp)
-
-
+            # Needed for varsTypesFormula
+            return typeToIndexesVars(self, tp)
 
         #########################################################################################
         # Methods from types
         #########################################################################################
 
         def show_names_types(self,
-                             names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                             names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [],
+                             namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                              namesTypesOutput=[], namesTypesOutputEx=[],
-                             pasColonne:int = 5, pasLigne:int = 5):
+                             pasColonne: int = 5, pasLigne: int = 5):
             """Display the types of names"""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             indexesNomsTypeSortie = nomsTypesToIndexesTypes(self, namesTypesOutput, namesTypesOutputEx)
             show_names_types(self, indexesNoms, indexesNomsTypeSortie,
                              pasColonne=pasColonne, pasLigne=pasLigne)
+
         def show_name_types(self, name,
-                            namesTypesOutput:List[str] = [], namesTypesOutputEx:List[str] = [],
-                            pasColonne:int = 5):
+                            namesTypesOutput: List[str] = [], namesTypesOutputEx: List[str] = [],
+                            pasColonne: int = 5):
             """Display the selected types of the variable"""
             indexName = nomToIndex(self, name)
             indexesNamesTypeSortie = varsTypesToIndexesTypesExt(self, namesTypesOutput, namesTypesOutputEx)
@@ -541,10 +505,9 @@ class Data:
             show_name_types(self, indexName, indexesNamesTypeSortie,
                             pasColonne=pasColonne)
 
-
         def show_var_types(self, var,
-                            varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                            pasLigne:int = 5):
+                           varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                           pasLigne: int = 5):
             """Display the selected types of the variable"""
             indexVar = varToIndex(self, var)
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
@@ -552,49 +515,50 @@ class Data:
             print(color.bold + 'Variables types : ' + color.end)
 
             show_var_types(self, indexVar, indexesVarsTypeSortie,
-                            pasLigne=pasLigne)
+                           pasLigne=pasLigne)
 
         def show_vars_types(self, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                            varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
                             selected=False,
-                            pasColonne:int = 5, pasLigne:int = 5):
+                            pasColonne: int = 5, pasLigne: int = 5):
             """Display the types of variables"""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
-            if (len(indexesVars)*len(indexesVarsTypeSortie)) > self.maxData:
+            if (len(indexesVars) * len(indexesVarsTypeSortie)) > self.maxData:
                 answer = input('This could be quite long. Do you still want to continue ? (y/n) : ')
-                if not answer in self.yes : sys.exit()
-            print('variables : '+str(len(indexesVars)))
-            print('types : '+str(len(indexesVarsTypeSortie)))
+                if not answer in self.yes: sys.exit()
+            print('variables : ' + str(len(indexesVars)))
+            print('types : ' + str(len(indexesVarsTypeSortie)))
             print(color.bold + 'Variables types : ' + color.end)
-            if selected :
+            if selected:
                 show_vars_types_selected(self, indexesVars, indexesVarsTypeSortie,
                                          pasColonne=pasColonne, pasLigne=pasLigne)
             else:
                 show_vars_types(self, indexesVars, indexesVarsTypeSortie,
-                            pasColonne=pasColonne, pasLigne=pasLigne)
+                                pasColonne=pasColonne, pasLigne=pasLigne)
 
         def show_vars_types_selected(self, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                            varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                            pasColonne:int = 5, pasLigne:int = 5):
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                     varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                     pasColonne: int = 5, pasLigne: int = 5):
             """Display the types of the variables for the types selected by at least one of the variables."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
-            if (len(indexesVars)*len(indexesVarsTypeSortie)) > self.maxData:
+            if (len(indexesVars) * len(indexesVarsTypeSortie)) > self.maxData:
+                print("Display {} variables and {} types.".format(len(indexesVars), len(indexesVarsTypeSortie)))
                 answer = input('This could be quite long. Do you still want to continue ? (y/n) : ')
-                if not answer in self.yes : sys.exit()
+                if not answer in self.yes: sys.exit()
 
             show_vars_types_selected(self, indexesVars, indexesVarsTypeSortie,
-                            pasColonne=pasColonne, pasLigne=pasLigne)
+                                     pasColonne=pasColonne, pasLigne=pasLigne)
 
         #########################################################################################
         # Methods from rules
         #########################################################################################
-        def show_vars_rules(self, varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = []):
+        def show_vars_rules(self, varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
             """Display the rules for the variable types"""
             indexesVarsTypeSortie = getIndexesVarsTypes(self, varsTypesOutput, varsTypesOutputEx)
 
@@ -605,21 +569,21 @@ class Data:
         #########################################################################################
         def show_difference(self,
                             name1, name2, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                             variantes: List[str] = [],
-                            pasColonne = 10, pasLigne:int = 5, width = '', decoration = True):
+                            pasColonne=10, pasLigne: int = 5, width='', decoration=True):
             """Display the values of variables where two names differ."""
             indexNom1 = nomToIndex(self, name1)
             indexNom2 = nomToIndex(self, name2)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             show_difference(self,
-                            indexNom1, indexNom2, indexesVars,variantes=variantes, pasColonne=pasColonne,
-                            pasLigne=pasLigne ,width=width, decoration = decoration )
+                            indexNom1, indexNom2, indexesVars, variantes=variantes, pasColonne=pasColonne,
+                            pasLigne=pasLigne, width=width, decoration=decoration)
 
         def show_difference_types(self,
                                   nom1, nom2, vars: List[str] = [], varsEx: List[str] = [],
-                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                  varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
+                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                  varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
                                   variantes: List[str] = [],
                                   effectifType=0, EffectifType=0,
                                   percenType=0, PercenType=100):
@@ -630,54 +594,54 @@ class Data:
             indexesVarsTypeSortie = getIndexesVarsTypes(self, varsTypesOutput, varsTypesOutputEx)
 
             show_difference_types(self,
-                                  indexNom1, indexNom2, indexesVars, indexesVarsTypeSortie,variantes=variantes,
+                                  indexNom1, indexNom2, indexesVars, indexesVarsTypeSortie, variantes=variantes,
                                   effectifType=effectifType, EffectifType=EffectifType,
                                   pourcenType=percenType, PourcenType=PercenType)
 
-        def show_compare_types(self,name1, name2, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+        def show_compare_types(self, name1, name2, vars: List[str] = [], varsEx: List[str] = [],
+                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                                varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
                                variantes: List[str] = [],
-                               effectif=0,Effectif=float('inf'),
+                               effectif=0, Effectif=float('inf'),
                                effectifType=0, EffectifType=float('inf'),
-                               pasColonne = 10,  order=''):
+                               pasColonne=10, order=''):
             """Display the number of common values for the selected types. Order is  by  the numbers of common values."""
             indexNom1 = nomToIndex(self, name1)
             indexNom2 = nomToIndex(self, name2)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesVarsTypesOutput = getIndexesVarsTypes(self, varsTypesOutput, varsTypesOutputEx)
 
-            print(color.bold + 'Comparison by types of \"{}\" and  \"{}\" : '.format(name1,name2) + color.end)
-            show_compare_types(self,indexNom1,indexNom2,indexesVars,indexesVarsTypesOutput=indexesVarsTypesOutput,
+            print(color.bold + 'Comparison by types of \"{}\" and  \"{}\" : '.format(name1, name2) + color.end)
+            show_compare_types(self, indexNom1, indexNom2, indexesVars, indexesVarsTypesOutput=indexesVarsTypesOutput,
                                variantes=variantes,
-                               effectif=effectif,Effectif=Effectif,
+                               effectif=effectif, Effectif=Effectif,
                                effectifType=effectifType, EffectifType=EffectifType,
-                               pasColonne=pasColonne,order=order)
+                               pasColonne=pasColonne, order=order)
 
-        def show_compare_types_percent(self,name1, name2, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                               varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
-                                variantes: List[str] = [],
-                               effectifType=0, EffectifType=float('inf'),
-                               percenType=0, PercenType=100,
-                               pasColonne = 10, order=''):
+        def show_compare_types_percent(self, name1, name2, vars: List[str] = [], varsEx: List[str] = [],
+                                       varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                       varsTypesFormula: str = '',
+                                       varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                       variantes: List[str] = [],
+                                       effectifType=0, EffectifType=float('inf'),
+                                       percenType=0, PercenType=100,
+                                       pasColonne=10, order=''):
             """Display the percentage of common values for the selected types. Order is  by percentage of common values."""
             indexNom1 = nomToIndex(self, name1)
             indexNom2 = nomToIndex(self, name2)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesVarsTypeSortie = getIndexesVarsTypes(self, varsTypesOutput, varsTypesOutputEx)
 
-            print(color.bold + 'Comparison by types of \"{}\" and  \"{}\" : '.format(name1,name2) + color.end)
+            print(color.bold + 'Comparison by types of \"{}\" and  \"{}\" : '.format(name1, name2) + color.end)
             show_compare_types_percent(self, indexNom1, indexNom2, indexesVars, indexesVarsTypeSortie,
                                        variantes=variantes,
                                        effectifType=effectifType, EffectifType=EffectifType,
                                        percenType=percenType, PercenType=PercenType,
                                        pasColonne=pasColonne, order=order)
 
-
         def vars_common(self,
                         nom1, nom2, vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                         variantes: List[str] = []):
             """List of variables where both names have the same value."""
             indexNom1 = nomToIndex(self, nom1)
@@ -688,9 +652,9 @@ class Data:
 
         def show_common(self,
                         name1, name2, vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                         variantes: List[str] = []):
-            """Display the table of values where the two names are equal. """
+            """Display the table of values where the two names are strEqual. """
             indexNom1 = nomToIndex(self, name1)
             indexNom2 = nomToIndex(self, name2)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
@@ -699,12 +663,14 @@ class Data:
         def show_names_common_percent(self,
                                       name, vars: List[str] = [], varsEx: List[str] = [],
                                       names: List[str] = [], namesEx: List[str] = [],
-                                      percent:int = 0, Percent:int = 100,
-                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                      percent: int = 0, Percent: int = 100,
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
                                       variantes: List[str] = [],
-                                      corpus:str = 'all', domain:str = 'all',
-                                      pasColonne:int = 5, pasLigne:int = 5):
+                                      corpus: str = 'all', domain: str = 'all',
+                                      pasColonne: int = 5, pasLigne: int = 5):
             """Display the common values of a name with other names, specifying the percentage of these names having this value.
             The idea is to recover the "rare" variables of a name relative to others."""
             indexNom = nomToIndex(self, name)
@@ -716,24 +682,25 @@ class Data:
                                       percent=percent, Percent=Percent,
                                       pasColonne=pasColonne, pasLigne=pasLigne)
 
-        def vars_discrimine(self,  nom,discrimines,
-                              vars: List[str] = [], varsEx: List[str] = [],
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                variantes=[]):
+        def vars_discrimine(self, nom, discrimines,
+                            vars: List[str] = [], varsEx: List[str] = [],
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            variantes=[]):
             indexNom = nomToIndex(self, nom)
             indexNom1 = nomToIndex(self, discrimines[0])
             indexNom2 = nomToIndex(self, discrimines[1])
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             return [self.vars[v] for v in indexesVars_discrimine(self,
-                                       indexNom, [indexNom1, indexNom2], indexesVars,
-                                       variantes=variantes)]
+                                                                 indexNom, [indexNom1, indexNom2], indexesVars,
+                                                                 variantes=variantes)]
+
         def show_discrimine(self,
                             nom, discrimines, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                             variantes: List[str] = [],
-                            pasColonne:int = 5,
+                            pasColonne: int = 5,
                             decoration=True):
-            """Display values of a name that discriminate between two names, i.e. that are equal to one but not to the other."""
+            """Display values of a name that discriminate between two names, i.e. that are strEqual to one but not to the other."""
             indexNom = nomToIndex(self, nom)
             indexNom1 = nomToIndex(self, discrimines[0])
             indexNom2 = nomToIndex(self, discrimines[1])
@@ -748,14 +715,14 @@ class Data:
         def show_discrimine_types(self,
                                   nom, discrimines, vars: List[str] = [], varsEx: List[str] = [],
                                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula=[],
-                                  varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
+                                  varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
                                   effectif: int = 0, Effectif: int = float('inf'),
                                   percent: int = 0, Percent: int = 100,
                                   effectifType: int = 0, EffectifType: int = float('inf'),
                                   variantes: List[str] = [],
                                   pasColonne: int = 5, pasLigne: int = 5,
                                   decoration=True):
-            """Display the number by type of values of a name that discriminate between two names, i.e. that are equal to one but not to the other. """
+            """Display the number by type of values of a name that discriminate between two names, i.e. that are strEqual to one but not to the other. """
             indexNom = nomToIndex(self, nom)
             indexNom1 = nomToIndex(self, discrimines[0])
             indexNom2 = nomToIndex(self, discrimines[1])
@@ -776,20 +743,20 @@ class Data:
         def show_correlations(self,
                               name, vars: List[str] = [], varsEx: List[str] = [],
                               names: List[str] = [], namesEx: List[str] = [], dir='both',
-                              percent:int = 0, Percent:int = 100, effectif:int = 0, Effectif:int = float('inf'),
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                              variantes:List[str] = [],
-                              pasColonne:int = 5, pasLigne:int = 5, corpus:str = 'all', domain:str = 'all',
+                              percent: int = 0, Percent: int = 100, effectif: int = 0, Effectif: int = float('inf'),
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                              variantes: List[str] = [],
+                              pasColonne: int = 5, pasLigne: int = 5, corpus: str = 'all', domain: str = 'all',
                               decoration=True):
-            """Display the common values with the names above, below, or both (resp. 'asc', 'desc','both'), in descending order of the percentage of equal values."""
+            """Display the common values with the names above, below, or both (resp. 'asc', 'desc','both'), in descending order of the percentage of strEqual values."""
 
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
             if dir == 'asc':
-                indexesNoms =[n for n in indexes['noms'] if n < indexNom]
+                indexesNoms = [n for n in indexes['noms'] if n < indexNom]
             elif dir == 'desc':
                 indexesNoms = [n for n in indexes['noms'] if n > indexNom]
             else:
@@ -801,20 +768,20 @@ class Data:
                               pasColonne=pasColonne, pasLigne=pasLigne,
                               decoration=decoration)
 
-
         def show_correlations_types(self,
-                                    name, vars: List[str] = [], varsEx: List[str] = [], varsTypesFormula:str = '',
+                                    name, vars: List[str] = [], varsEx: List[str] = [], varsTypesFormula: str = '',
                                     names: List[str] = [], namesEx: List[str] = [], dir='both',
-                                    effectif=0,Effectif=float('inf'),
+                                    effectif=0, Effectif=float('inf'),
                                     effectifType=0, EffectifType=float('inf'),
                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [],
-                                    varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                    varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                    namesTypesFormula: str = '',
                                     variantes: List[str] = [],
-                                    corpus:str = 'all', domain:str = 'all',
-                                    pasColonne:int = 5, pasLigne:int = 5,
+                                    corpus: str = 'all', domain: str = 'all',
+                                    pasColonne: int = 5, pasLigne: int = 5,
                                     decoration=True):
-            """Display the common values by type with the names below, in descending order of the percentage of equal values."""
+            """Display the common values by type with the names below, in descending order of the percentage of strEqual values."""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -828,29 +795,30 @@ class Data:
             indexesVarsTypesOutput = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
             show_correlations_types(self,
-                                    indexNom, indexesNoms, indexes['vars'],indexesVarsTypesOutput,
+                                    indexNom, indexesNoms, indexes['vars'], indexesVarsTypesOutput,
                                     variantes=variantes,
-                                    effectif=effectif,Effectif=Effectif,
+                                    effectif=effectif, Effectif=Effectif,
                                     effectifType=effectifType, EffectifType=EffectifType,
                                     pasColonne=pasColonne, pasLigne=pasLigne,
                                     decoration=decoration)
 
-
         def show_correlations_types_percent(self,
                                             name, vars: List[str] = [], varsEx: List[str] = [],
-                                            names: List[str] = [], namesEx: List[str] = [], dir:str = 'both',
-                                            effectif:int = 0, Effectif:int = float('inf'),
-                                            percent:int = 0, Percent:int = 100,
+                                            names: List[str] = [], namesEx: List[str] = [], dir: str = 'both',
+                                            effectif: int = 0, Effectif: int = float('inf'),
+                                            percent: int = 0, Percent: int = 100,
                                             percenType=0, PercenType=100,
-                                            effectifType:int = 0, EffectifType:int = float('inf'),
-                                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                            varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                                            namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                            effectifType: int = 0, EffectifType: int = float('inf'),
+                                            varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                            varsTypesFormula: str = '',
+                                            varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                            namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                            namesTypesFormula: str = '',
                                             variantes: List[str] = [],
-                                            corpus:str = 'all', domain:str = 'all',
-                                            pasColonne:int = 5, pasLigne:int = 5,
+                                            corpus: str = 'all', domain: str = 'all',
+                                            pasColonne: int = 5, pasLigne: int = 5,
                                             decoration=True):
-            """Display the percentage of common values by type with the names below, in descending order of the percentage of equal values."""
+            """Display the percentage of common values by type with the names below, in descending order of the percentage of strEqual values."""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -874,11 +842,11 @@ class Data:
                                             pasColonne=pasColonne, pasLigne=pasLigne,
                                             decoration=decoration)
 
-
         def show_discrimine_types_percent(self,
                                           name, discrimines, vars: List[str] = [], varsEx: List[str] = [],
-                                          varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                          varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
+                                          varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                          varsTypesFormula: str = '',
+                                          varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
                                           effectif: int = 0, Effectif: int = float('inf'),
                                           percent: int = 0, Percent: int = 100,
                                           percenType: int = 0, PercenType: int = 100,
@@ -886,19 +854,19 @@ class Data:
                                           variantes: List[str] = [],
                                           pasColonne: int = 5, pasLigne: int = 5,
                                           decoration=True):
-            """Display the percentage by type of values of a name that discriminate between two names, i.e. that are equal to one but not to the other. """
+            """Display the percentage by type of values of a name that discriminate between two names, i.e. that are strEqual to one but not to the other. """
             indexNom = nomToIndex(self, name)
             indexNom1 = nomToIndex(self, discrimines[0])
             indexNom2 = nomToIndex(self, discrimines[1])
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
-            indexesVars = indexesVars_discrimine(self, indexNom, [indexNom1,indexNom2],indexesVars)
+            indexesVars = indexesVars_discrimine(self, indexNom, [indexNom1, indexNom2], indexesVars)
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
             show_correlations_types_percent(self,
-                                            indexNom, [indexNom1,indexNom2],
+                                            indexNom, [indexNom1, indexNom2],
                                             indexesVars, indexesVarsTypeSortie,
                                             variantes=variantes,
-                                            effectif=effectif,Effectif=Effectif,
+                                            effectif=effectif, Effectif=Effectif,
                                             percent=percent, Percent=Percent,
                                             percenType=percenType, PercenType=PercenType,
                                             effectifType=effectifType, EffectifType=EffectifType,
@@ -906,30 +874,31 @@ class Data:
                                             decoration=decoration)
 
         def show_residual_types_percent(self,
-                                          name, names: List[str] = [], namesEx: List[str] = [],
-                                          namesTypes: List[str] = [], namesTypesEx: List[str] = [],
-                                          namesTypesFormula: str = '',
-                                          vars: List[str] = [], varsEx: List[str] = [],
-                                          varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                          varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                                          variantes: List[str] = [],
-                                          pasColonne:int = 5):
+                                        name, names: List[str] = [], namesEx: List[str] = [],
+                                        namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                        namesTypesFormula: str = '',
+                                        vars: List[str] = [], varsEx: List[str] = [],
+                                        varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                        varsTypesFormula: str = '',
+                                        varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                        variantes: List[str] = [],
+                                        pasColonne: int = 5):
             """Display the residual percentage of the correlations by type of the names relative to the name,
-            i.e. that are not equal to name. """
+            i.e. that are not strEqual to name. """
             indexNom = nomToIndex(self, name)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
             show_residual_types_percent(self,
-                                           indexNom, indexesNoms,
-                                           indexesVars, indexesVarsTypeSortie,
-                                           variantes=variantes,
-                                           pasColonne=pasColonne)
+                                        indexNom, indexesNoms,
+                                        indexesVars, indexesVarsTypeSortie,
+                                        variantes=variantes,
+                                        pasColonne=pasColonne)
 
         def plot_intervals(self, name1, name2, length,
                            vars: List[str] = [], varsEx: List[str] = [],
-                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                            variantes: List[str] = [],
                            pas=1, elev=0, azim=0):
             # todo : docstring
@@ -950,9 +919,9 @@ class Data:
             return domain(self, vars=vars, names=names)
 
         def show_domain(self, vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                         names: List[str] = [], namesEx: List[str] = [],
-                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """Display variables with values for all selected names"""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
@@ -960,9 +929,9 @@ class Data:
             printLines(columns=vars)
 
         def corpus(self, vars: List[str] = [], varsEx: List[str] = [],
-                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                    names: List[str] = [], namesEx: List[str] = [],
-                   namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                   namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """List of names with values on all selected variables."""
 
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
@@ -972,9 +941,9 @@ class Data:
             return cp
 
         def show_corpus(self, vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                         names: List[str] = [], namesEx: List[str] = [],
-                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
             """Display variables with values for all selected names"""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
@@ -983,14 +952,15 @@ class Data:
 
         def show_vars_missing(self, nom,
                               vars: List[str] = [], varsEx: List[str] = [],
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display variables without value for the selected name"""
             indexNom = nomToIndex(self, nom)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             show_vars_missing(self, indexNom, indexesVars)
 
-        def names_thamous_missing(self, names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                  corpus:str = 'all'):
+        def names_thamous_missing(self, names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [],
+                                  namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                  corpus: str = 'all'):
             """List of names without Thamous identifier."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             indexes = corpusdomaine(self, corpus, 'all', indexesNoms, [])
@@ -1006,42 +976,42 @@ class Data:
 
         def show_vars_without_types(self,
                                     vars: List[str] = [], varsEx: List[str] = [],
-                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """Display variables without types"""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             show_vars_without_types(self, indexesVars)
 
         def show_names_without_types(self,
                                      names: List[str] = [], namesEx: List[str] = [],
-                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                     namesTypesFormula: str = ''):
             """Display names without types"""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             show_names_without_types(self, indexesNoms)
 
         def show_names_without_value(self,
                                      vars: List[str] = [], varsEx: List[str] = [],
-                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                                      names: List[str] = [], namesEx: List[str] = [],
-                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                     namesTypesFormula: str = ''):
             """Display the names without values on the selected variables."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
             show_names_without_value(self, indexesNoms, indexesVars)
 
-
         def vars_with_value(self, nom,
-                         vars: List[str] = [], varsEx: List[str] = [],
-                         varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                            vars: List[str] = [], varsEx: List[str] = [],
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """List of the variables of a name with a value."""
             indexNom = nomToIndex(self, nom)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
 
             return vars_with_value(self, indexNom, indexesVars)
 
-
         def vars_without_value(self, nom,
-                         vars: List[str] = [], varsEx: List[str] = [],
-                         varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                               vars: List[str] = [], varsEx: List[str] = [],
+                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """List of the variables of a name without a value."""
             indexNom = nomToIndex(self, nom)
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
@@ -1051,26 +1021,33 @@ class Data:
         def vars_without_values(self,
                                 names: List[str] = [], namesEx: List[str] = [],
                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
-                               vars: List[str] = [], varsEx: List[str] = [],
-                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
+                                vars: List[str] = [], varsEx: List[str] = [],
+                                varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """List of the variables without a value on any the given names."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
 
             return vars_without_values(self, indexesNoms, indexesVars)
 
-
         def show_values_without_quotations(self,
                                            vars: List[str] = [], varsEx: List[str] = [],
-                                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                                           varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                           varsTypesFormula: str = '',
                                            names: List[str] = [], namesEx: List[str] = [],
-                                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                           namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                           namesTypesFormula: str = ''):
             """Display values without quotation."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
 
             show_values_without_quotations(self, indexesNoms, indexesVars)
 
+        def varsValues(self,
+                       vars: List[str] = [], varsEx: List[str] = [],
+                       varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                       names: List[str] = [], namesEx: List[str] = [],
+                       namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = ''):
+            """list of variables withe the given value"""
 
         #########################################################################################
         # Methods from  innove
@@ -1079,13 +1056,14 @@ class Data:
         def show_names_data_percent(self,
                                     nom, names: List[str] = [], namesEx: List[str] = [],
                                     vars: List[str] = [], varsEx: List[str] = [],
-                                    percent:int = 0, Percent:int = 100,
-                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                    percent: int = 0, Percent: int = 100,
+                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                    namesTypesFormula: str = '',
                                     variantes: List[str] = [],
-                                    corpus:str = 'all', domain:str = 'all',
-                                    pasColonne = 10, pasLigne = 10):
-            """Displays names with at least one value equal to those of a certain percentage of the selected names. """
+                                    corpus: str = 'all', domain: str = 'all',
+                                    pasColonne=10, pasLigne=10):
+            """Displays names with at least one value strEqual to those of a certain percentage of the selected names. """
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1096,12 +1074,12 @@ class Data:
                                     pasColonne=pasColonne, pasLigne=pasLigne)
 
         def show_data_only(self,
-                           nom, names: List[str] = [], namesEx: List[str] = [], dir = 'both',
+                           nom, names: List[str] = [], namesEx: List[str] = [], dir='both',
                            vars: List[str] = [], varsEx: List[str] = [],
-                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                            variantes: List[str] = [],
-                           corpus:str = 'all', domain:str = 'all'):
+                           corpus: str = 'all', domain: str = 'all'):
             """Display the eigenvalues for a name."""
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -1119,12 +1097,12 @@ class Data:
         def vars_data_percent(self,
                               nom, names: List[str] = [], namesEx: List[str] = [],
                               vars: List[str] = [], varsEx: List[str] = [],
-                              percent:int = 0, Percent:int = 100,
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                              percent: int = 0, Percent: int = 100,
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                               variantes: List[str] = [],
-                              corpus:str = 'all', domain:str = 'all'):
-            """List of variables whose percentage of values equal to those of the selected names are between two given percentages."""
+                              corpus: str = 'all', domain: str = 'all'):
+            """List of variables whose percentage of values strEqual to those of the selected names are between two given percentages."""
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1140,15 +1118,15 @@ class Data:
                                      percent=percent, Percent=Percent)
 
         def show_data_percent(self,
-                              nom, names: List[str] = [], namesEx: List[str] = [],dir='both',
+                              nom, names: List[str] = [], namesEx: List[str] = [], dir='both',
                               vars: List[str] = [], varsEx: List[str] = [],
-                              percent:int = 0, Percent:int = 100,
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                              percent: int = 0, Percent: int = 100,
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                               variantes: List[str] = [],
-                              corpus:str = 'all', domain:str = 'all',
-                              pasColonne:int = 5, pasLigne:int = 5):
-            """Display the values for variables whose percentage of values equal to those of the selected names are between two given percentages."""
+                              corpus: str = 'all', domain: str = 'all',
+                              pasColonne: int = 5, pasLigne: int = 5):
+            """Display the values for variables whose percentage of values strEqual to those of the selected names are between two given percentages."""
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1160,14 +1138,13 @@ class Data:
                               percent=percent, Percent=Percent,
                               pasColonne=pasColonne, pasLigne=pasLigne)
 
-
         def vars_only(self,
-                      nom, names: List[str] = [], namesEx: List[str] = [], dir = 'both',
+                      nom, names: List[str] = [], namesEx: List[str] = [], dir='both',
                       vars: List[str] = [], varsEx: List[str] = [],
-                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                       variantes: List[str] = [],
-                      corpus:str = 'all', domain:str = 'all'):
+                      corpus: str = 'all', domain: str = 'all'):
             """List of variables with their own values."""
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -1184,43 +1161,43 @@ class Data:
         def vars_innove(self,
                         names: List[str] = [], namesEx: List[str] = [],
                         vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                         variantes: List[str] = [],
-                        corpus:str = 'all', domain:str = 'all', dir:str = 'asc'):
+                        corpus: str = 'all', domain: str = 'all', dir: str = 'asc'):
             """List of innovative variables relative to the selected names: a variable is innovative when one of the names innovates on this variable relative to the others. """
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
-            return [self.vars[v] for v in vars_innove(self, indexes['noms'], indexes['vars'], dir = dir, variantes=variantes)]
+            return [self.vars[v] for v in
+                    vars_innove(self, indexes['noms'], indexes['vars'], dir=dir, variantes=variantes)]
 
         def show_innove(self,
-                             names: List[str] = [], namesEx: List[str] = [],
-                             vars: List[str] = [], varsEx: List[str] = [],
-                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                             namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
-                                variantes: List[str] = [],
-                             corpus:str = 'all', domain:str = 'all', dir = 'asc'):
+                        names: List[str] = [], namesEx: List[str] = [],
+                        vars: List[str] = [], varsEx: List[str] = [],
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                        variantes: List[str] = [],
+                        corpus: str = 'all', domain: str = 'all', dir='asc'):
             """Display the innovative variables relative to the selected names: a variable is innovative when one of the names innovates on this variable relative to the others. """
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
-            show_innove(self, indexes['noms'], indexes['vars'], dir = dir,variantes=variantes)
-
+            show_innove(self, indexes['noms'], indexes['vars'], dir=dir, variantes=variantes)
 
         def show_innove_types(self,
                               names: List[str] = [], namesEx: List[str] = [],
                               vars: List[str] = [], varsEx: List[str] = [],
-                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                              varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                              varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                               variantes: List[str] = [],
-                              corpus:str = 'all', domain:str = 'all',
+                              corpus: str = 'all', domain: str = 'all',
                               effectifType=0, EffectifType=0,
-                              pasColonne:int = 5, pasLigne:int = 5, dir='asc', decoration = True):
+                              pasColonne: int = 5, pasLigne: int = 5, dir='asc', decoration=True):
             """Display the innovative variables by types relative to the selected names: a variable is innovative when one of the names innovates on this variable relative to the others. """
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1230,20 +1207,22 @@ class Data:
             show_innove_types(self, indexes['noms'], indexes['vars'], indexesVarsTypeSortie, dir=dir,
                               variantes=variantes,
                               effectifType=effectifType, EffectifType=EffectifType,
-                              pasColonne=pasColonne, pasLigne=pasLigne, decoration = decoration)
+                              pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
         def show_innove_types_percent(self,
                                       names: List[str] = [], namesEx: List[str] = [],
                                       vars: List[str] = [], varsEx: List[str] = [],
-                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                      varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = [],
-                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = [],
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
                                       dir='asc',
                                       variantes: List[str] = [],
-                                      corpus:str = 'all', domain:str = 'all',
+                                      corpus: str = 'all', domain: str = 'all',
                                       percenType=0, PercenType=100,
-                                      effectif:int = 0, Effectif:int = 0,
-                                      pasColonne:int = 5, pasLigne:int = 5, decoration = True):
+                                      effectif: int = 0, Effectif: int = 0,
+                                      pasColonne: int = 5, pasLigne: int = 5, decoration=True):
             """Display the percentage of innovative variables by types relative to the selected names: a variable is innovative when one of the names innovates on this variable relative to the others. """
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1256,15 +1235,14 @@ class Data:
                                       effectif=effectif, Effectif=Effectif,
                                       pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
-
         def translation_test(self, names: List[str], namesEx: List[str] = [],
                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                              vars: List[str] = [], varsEx: List[str] = [],
-                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
+                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
                              corpus: str = 'all', domain: str = 'all',
-                             dir='asc',decoration=True):
+                             dir='asc', decoration=True):
             """Apply the translation test in the direction indicated."""
-            if isinstance(names, str):names=[names]
+            if isinstance(names, str): names = [names]
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
@@ -1274,31 +1252,34 @@ class Data:
             return show_innove_types_percent(self, indexes['noms'], indexes['vars'],
                                              indexesVarsTypesOutput=[indexVarsTypesTraduction,
                                                                      indexVarsTypesCitation],
-                                             dir=dir,decoration=decoration)
+                                             dir=dir, decoration=decoration)
 
         #########################################################################################
         # Methods from  coherence
         #########################################################################################
-        def show_coherence(self, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
-                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                           namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
+        def show_coherence(self, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [],
+                           varsEx: List[str] = [],
+                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                            variantes: List[str] = [],
-                           corpus:str = 'all', domain:str = 'all',
-                           pasColonne:int = 5, pasLigne:int = 5, decoration:bool = True):
+                           corpus: str = 'all', domain: str = 'all',
+                           pasColonne: int = 5, pasLigne: int = 5, decoration: bool = True):
             """Display for the selected names the number of times a value is taken independently of the variable whose value it is."""
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
-            show_coherence(self, indexes['noms'], indexes['vars'],variantes=variantes,
+            show_coherence(self, indexes['noms'], indexes['vars'], variantes=variantes,
                            pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
-        def show_coherence_percent(self, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
-                                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                   namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
-                                   variantes: List[str] =[],
-                                   corpus:str = 'all', domain:str = 'all',
-                                   pasColonne:int = 5, pasLigne:int = 5, decoration:bool = True):
+        def show_coherence_percent(self, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [],
+                                   varsEx: List[str] = [],
+                                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                   namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                   namesTypesFormula: str = '',
+                                   variantes: List[str] = [],
+                                   corpus: str = 'all', domain: str = 'all',
+                                   pasColonne: int = 5, pasLigne: int = 5, decoration: bool = True):
             """Display for the selected names the percentage of times a value is taken independently of the variable whose value it is."""
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1309,12 +1290,12 @@ class Data:
                                    pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
         def show_coherence_type(self, nom, tp, variantes: List[str] = []):
-            #todo : pourquoi un seul nom quand show_coherence a une liste ?
+            # todo : pourquoi un seul nom quand show_coherence a une liste ?
             show_coherence_type(self, nom, tp, variantes=variantes)
 
         def show_coherence_types(self, nom, varsTypes
                                  , variantes: List[str] = []):
-            #todo : pourquoi un seul nom quand show_coherence a une liste ?
+            # todo : pourquoi un seul nom quand show_coherence a une liste ?
             show_coherence_types(self, nom, varsTypes, variantes=variantes)
 
         #########################################################################################
@@ -1325,35 +1306,41 @@ class Data:
                                namesIncompleteBasis=[], namesIncompleteBasisEx=[],
                                vars: List[str] = [], varsEx: List[str] = [],
                                names: List[str] = [], namesEx: List[str] = [],
-                               max:int =0, percent:int = 0, Percent :int = 100,
-                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                               namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                               max: int = 0, percent: int = 0, Percent: int = 100,
+                               varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                               namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                                variantes: List[str] = [],
-                               corpus:str = 'all', domain='positif',
-                               pasColonne:int = 5, pasLigne:int = 5,decoration = True):
+                               dir='',
+                               corpus: str = 'all', domain='all',
+                               pasColonne: int = 5, pasLigne: int = 5, decoration=True):
             """Display the decomposition of the values of a name in relation to those of other names according to the percentages indicated."""
             indexNom = nomToIndex(self, nom)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
-
             if namesIncompleteBasis or namesIncompleteBasisEx:
                 indexesNomsBaseIncomplete = nomsToIndexesNoms(self, namesIncompleteBasis, namesIncompleteBasisEx)
             else:
                 indexesNomsBaseIncomplete = []
 
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < indexNom]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > indexNom]
+            else:
+                indexesNoms = indexes['noms']
             show_decomposition(self,
-                               indexNom, indexes['noms'], indexes['vars'],
-                               indexesNomsBaseIncomplete,
-                               variantes=variantes,
-                               max=max, percent=percent, Percent=Percent,
-                               pasColonne=pasColonne, pasLigne=pasLigne,decoration=decoration)
+                           indexNom, indexesNoms, indexes['vars'],
+                           indexesNomsBaseIncomplete,
+                           variantes=variantes,
+                           max=max, percent=percent, Percent=Percent,
+                           pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
         def show_values(self, names: List[str] = [], namesEx: List[str] = [],
                         vars: List[str] = [], varsEx: List[str] = [],
-                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                        corpus:str = 'all', domain:str = 'all'):
+                        varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                        namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                        corpus: str = 'all', domain: str = 'all'):
             """Display the attested values of the variables for a list of names."""
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1361,54 +1348,91 @@ class Data:
 
             show_values(self, indexes['noms'], indexes['vars'])
 
-        def show_names_included(self, namesGenerators:List[str]=[], namesGeneratorsEx:List[str]=[],
+        def show_names_included(self,
+                                namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
+                                namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
+                                namesGeneratorsTypesFormula: List[str] = [],
                                 vars: List[str] = [], varsEx: List[str] = [],
                                 names: List[str] = [], namesEx: List[str] = [],
-                                varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                corpus:str = 'all', domain:str = 'all',
-                                percent:int = 0, Percent:int = 100):
-            #todo:à revoir...
+                                varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                dir='both',
+                                corpus: str = 'all', domain: str = 'all',
+                                percent: int = 0, Percent: int = 100):
+            """Display the names wiche values are included, to a certain percent, in those of namesGenerators"""
+            # todo:à revoir...
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
 
-            show_names_included(self, indexes['noms'], indexes['vars'], namesGenerating=namesGenerators,
-                                namesGeneringEx=namesGeneratorsEx,
+            indexesGenerators = getIndexes(self, namesGenerators, namesGeneratorsEx, namesGeneratorsTypes,
+                                           namesGeneratorsTypesEx, namesGeneratorsTypesFormula,
+                                           vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                           corpus, domain)
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < min(indexesGenerators['noms'])]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
+            else:
+                indexesNoms = indexes['noms']
+
+
+
+            show_names_included(self, indexesGenerators['noms'],indexesNoms, indexes['vars'],
                                 percent=percent, Percent=Percent)
 
-        def show_names_included_types(self, namesGenerating:List[str]=[], namesGeneratingEx:List[str]=[],
-                                      vars: List[str] = [], varsEx: List[str] = [],
+        def show_names_included_types(self,
+                                      namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
+                                      namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
+                                      namesGeneratorsTypesFormula: List[str] = [], vars: List[str] = [],
+                                      varsEx: List[str] = [],
                                       names: List[str] = [], namesEx: List[str] = [],
-                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                      corpus:str = 'all', domain:str = 'all',
-                                      percent:int = 0, Percent:int = 100,
-                                      effectif:int = 0, Effectif:int = 0,
-                                      varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = []):
-            #todo:docstring
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
+                                      corpus: str = 'all', domain: str = 'all',
+                                      percent: int = 0, Percent: int = 100,
+                                      effectif: int = 0, Effectif: int = 0,
+                                      varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
+            # todo:docstring
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
+
+            indexesGenerators = getIndexes(self, namesGenerators, namesGeneratorsEx, namesGeneratorsTypes,
+                                           namesGeneratorsTypesEx, namesGeneratorsTypesFormula,
+                                           vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                           corpus, domain)
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < min(indexesGenerators['noms'])]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
+            else:
+                indexesNoms = indexes['noms']
             indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
 
-            show_names_included_types(self, indexes['noms'], indexes['vars'], indexesVarsTypeSortie,
-                                      namesGenerating=namesGenerating, namesGeneratingEx=namesGeneratingEx,
+            show_names_included_types(self, indexesGenerators['noms'],indexesNoms,
+                                      indexes['vars'],indexesVarsTypeSortie,
                                       percent=percent, Percent=Percent,
                                       effectif=effectif, Effectif=Effectif)
 
-        def show_names_included_types_percent(self, namesGenerating:List[str]=[], namesGeneratingEx:List[str]=[],
+        def show_names_included_types_percent(self, namesGenerating: List[str] = [], namesGeneratingEx: List[str] = [],
                                               vars: List[str] = [], varsEx: List[str] = [],
                                               names: List[str] = [], namesEx: List[str] = [],
-                                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                              percent:int = 0, Percent:int = 100,
-                                              effectif:int = 0, Effectif:int = 0,
-                                              corpus='all',domain='all',
-                                              varsTypesOutput:List[str] = [], varsTypesOutputEx:List[str] = []):
-            #todo:docstring
+                                              varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                              varsTypesFormula: str = '',
+                                              namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                              namesTypesFormula: str = '',
+                                              percent: int = 0, Percent: int = 100,
+                                              effectif: int = 0, Effectif: int = 0,
+                                              corpus='all', domain='all',
+                                              varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
+            # todo:docstring
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1421,15 +1445,17 @@ class Data:
                                               percent=percent, Percent=Percent,
                                               effectif=effectif, Effectif=Effectif)
 
-        def show_names_basis_complete(self, namesGenerators:List[str]=[], namesGeneratorsEx:List[str]=[],
+        def show_names_basis_complete(self, namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
                                       nomsBaseIncomplete=[],
                                       vars: List[str] = [], varsEx: List[str] = [],
                                       names: List[str] = [], namesEx: List[str] = [],
-                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                      corpus='all',domain='all',
-                                      percent:int = 0, Percent:int = 100, max:int = 0):
-            #todo:docstring
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                      varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                      namesTypesFormula: str = '',
+                                      corpus='all', domain='all',
+                                      percent: int = 0, Percent: int = 100, max: int = 0):
+            # todo:docstring
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1441,13 +1467,13 @@ class Data:
                                       percent=percent, Percent=Percent)
 
         def show_vars_basis_first(self, varsIncompleteBasis=[],
-                                 vars: List[str] = [], varsEx: List[str] = [],
-                                 names: List[str] = [], namesEx: List[str] = [],
-                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                 corpus='all',domain='all',
-                                 max:int = 0):
-            #todo:docstring
+                                  vars: List[str] = [], varsEx: List[str] = [],
+                                  names: List[str] = [], namesEx: List[str] = [],
+                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                  corpus='all', domain='all',
+                                  max: int = 0):
+            # todo:docstring
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1458,11 +1484,11 @@ class Data:
         def show_vars_basis(self, varsIncompleteBasis=[],
                             vars: List[str] = [], varsEx: List[str] = [],
                             names: List[str] = [], namesEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                            namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                            corpus:str = 'all', domain:str = 'all',
-                            max:int = 0):
-            #todo:docstring
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                            corpus: str = 'all', domain: str = 'all',
+                            max: int = 0):
+            # todo:docstring
             '''Display the sets of least number of variables sufficient to discriminate the selected names '''
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -1477,10 +1503,10 @@ class Data:
         def show_repartition(self,
                              vars: List[str] = [], varsEx: List[str] = [],
                              names: List[str] = [], namesEx: List[str] = [],
-                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                             namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                             namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                              variantes: List[str] = [],
-                             corpus:str = 'all', domain:str = 'all',
+                             corpus: str = 'all', domain: str = 'all',
                              replaceValues: List[str] = [], replaceNames: List[str] = [], replaceVars: List[str] = [],
                              decoration=True):
             """Display the array of names with the same values on a given set of variables."""
@@ -1490,16 +1516,17 @@ class Data:
                                  corpus, domain)
             show_repartition(self, indexes['noms'], indexes['vars'],
                              variantes=variantes,
-                             replaceValues = replaceValues, replaceNames = replaceNames, replaceVars = replaceVars,
+                             replaceValues=replaceValues, replaceNames=replaceNames, replaceVars=replaceVars,
                              decoration=decoration)
 
         def show_popularity(self, vars: List[str] = [], varsEx: List[str] = [],
                             names: List[str] = [], namesEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                            namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                             variantes: List[str] = [],
-                            domain:str = 'all', corpus:str = 'all'):
-            """Display the most common values, and for each name the percentage of its values equal to the most common values."""
+                            domain: str = 'all', corpus: str = 'all'):
+            """Display the most common values, and for each name the percentage of its values strEqual to the most common values."""
+            #TODO : Traiter le cas où deux valeurs on même popularité.
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
@@ -1549,11 +1576,11 @@ class Data:
 
         def show_graph_deviation(self, name: str, vars: List[str] = [], varsEx: List[str] = [],
                                  names: List[str] = [], namesEx: List[str] = [],
-                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                 percent:int = 0, Percent:int = 100,
+                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                 percent: int = 0, Percent: int = 100,
                                  variantes: List[str] = [],
-                                 corpus:str = 'all', domain:str = 'all',
+                                 corpus: str = 'all', domain: str = 'all',
                                  width='', height='', font_size='', font_color='', node_color='',
                                  label_posX='', label_posY=''):
             """Display de deviation graph"""
@@ -1571,11 +1598,11 @@ class Data:
 
         def show_graphs_deviation(self, vars: List[str] = [], varsEx: List[str] = [],
                                   names: List[str] = [], namesEx: List[str] = [],
-                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                                   variantes: List[str] = [],
-                                  corpus='all',domain='all',
-                                  percent:int = 0, Percent:int = 100):
+                                  corpus='all', domain='all',
+                                  percent: int = 0, Percent: int = 100):
             """Display the deviation graphs for the names."""
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
@@ -1591,12 +1618,12 @@ class Data:
 
         def show_graph_distance(self, links=True, names: List[str] = [], namesEx: List[str] = [],
                                 vars: List[str] = [], varsEx: List[str] = [],
-                                varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
+                                varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
                                 variantes: List[str] = [],
-                                corpus='all',domain='all',
-                                percent:int = 0, Percent:int = 100, linksColors={}):
-            #todo: docstring matrix
+                                corpus='all', domain='all',
+                                percent: int = 0, Percent: int = 100, linksColors={}):
+            # todo: docstring matrix
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
@@ -1607,11 +1634,11 @@ class Data:
 
         def show_distance_ordered(self, names: List[str] = [], namesEx: List[str] = [],
                                   vars: List[str] = [], varsEx: List[str] = [],
-                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                  corpus='all',domain='all',
-                                  percent:int = 0, Percent:int = 100):
-            #todo:docstring matrix
+                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                  corpus='all', domain='all',
+                                  percent: int = 0, Percent: int = 100):
+            # todo:docstring matrix
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
@@ -1621,7 +1648,7 @@ class Data:
         def show_distance_matrix(self, namesI=[], namesIEx=[],
                                  namesJ=[], namesJEx=[],
                                  vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_distance_matrix(self, namesI=namesI, namesIEx=namesIEx,
                                  namesJ=namesJ, namesJEx=namesJEx,
@@ -1631,7 +1658,7 @@ class Data:
                                          namesI=[], namesIEx=[],
                                          namesJ=[], namesJEx=[],
                                          vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_distance_matrix_percent(self, namesI=namesI, namesIEx=namesIEx,
                                          namesJ=namesJ, namesJEx=namesJEx,
@@ -1641,7 +1668,7 @@ class Data:
                                             namesI=[], namesIEx=[],
                                             namesJ=[], namesJEx=[],
                                             vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_distance_matrix_normalized(self, namesI=namesI, namesIEx=namesIEx,
                                             namesJ=namesJ, namesJEx=namesJ,
@@ -1649,23 +1676,25 @@ class Data:
 
         def show_distance_matrix_coordinates(self, names: List[str] = [], namesEx: List[str] = [],
                                              vars: List[str] = [], varsEx: List[str] = [],
-                                             varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                             namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                             corpus='all',domain='all'):
-            #todo:docstring matrix
+                                             varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                             varsTypesFormula: str = '',
+                                             namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                             namesTypesFormula: str = '',
+                                             corpus='all', domain='all'):
+            # todo:docstring matrix
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
             show_distance_matrix_coordinates(self, indexes['noms'], indexes['vars'])
 
-        def show_graph_proximity(self, links=True, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
-                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                 corpus:str = 'all', domain:str = 'all',
-                                 percent:int = 0, Percent:int = 100, linksColors={}):
-            #todo:docstring matrix
-
+        def show_graph_proximity(self, links=True, names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [],
+                                 varsEx: List[str] = [],
+                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                 namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                 corpus: str = 'all', domain: str = 'all',
+                                 percent: int = 0, Percent: int = 100, linksColors={}):
+            # todo:docstring matrix
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1675,11 +1704,12 @@ class Data:
 
         def show_proximity_ordered(self, names: List[str] = [], namesEx: List[str] = [],
                                    vars: List[str] = [], varsEx: List[str] = [],
-                                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                   namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                   corpus:str = 'all', domain:str = 'all',
-                                   percent:int = 0, Percent:int = 100):
-            #todo:docstring matrix
+                                   varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                   namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                   namesTypesFormula: str = '',
+                                   corpus: str = 'all', domain: str = 'all',
+                                   percent: int = 0, Percent: int = 100):
+            # todo:docstring matrix
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1690,7 +1720,7 @@ class Data:
         def show_proximity_matrix(self, namesI=[], namesIEx=[],
                                   namesJ=[], namesJEx=[],
                                   vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_proximity_matrix(self, namesI=namesI, namesIEx=namesIEx,
                                   namesJ=namesJ, namesJEx=namesJEx,
@@ -1700,7 +1730,7 @@ class Data:
                                           namesI=[], namesIEx=[],
                                           namesJ=[], namesJEx=[],
                                           vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_proximity_matrix_percent(self, namesI=namesI, namesIEx=namesIEx,
                                           namesJ=namesJ, namesJEx=namesJEx,
@@ -1710,7 +1740,7 @@ class Data:
                                              namesI=[], namesIEx=[],
                                              namesJ=[], namesJEx=[],
                                              vars: List[str] = [], varsEx: List[str] = []):
-            #todo:docstring matrix
+            # todo:docstring matrix
 
             show_proximity_matrix_normalized(self, namesI=namesI, namesIEx=namesIEx,
                                              namesJ=namesJ, namesJEx=namesJEx,
@@ -1718,10 +1748,12 @@ class Data:
 
         def show_proximity_matrix_coordinates(self, names: List[str] = [], namesEx: List[str] = [],
                                               vars: List[str] = [], varsEx: List[str] = [],
-                                              varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                                              namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                                              corpus:str = 'all', domain:str = 'all'):
-            #todo:docstring matrix
+                                              varsTypes: List[str] = [], varsTypesEx: List[str] = [],
+                                              varsTypesFormula: str = '',
+                                              namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                              namesTypesFormula: str = '',
+                                              corpus: str = 'all', domain: str = 'all'):
+            # todo:docstring matrix
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1757,11 +1789,11 @@ class Data:
         #########################################################################################
         def show_intervals(self, name1, name2, names: List[str] = [], namesEx: List[str] = [],
                            vars: List[str] = [], varsEx: List[str] = [],
-                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                           corpus = 'all', domain = 'all',
-                           percent:int = 0, length=1, pas=1):
-            #todo:docstring show_intervals
+                           varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                           namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                           corpus='all', domain='all',
+                           percent: int = 0, length=1, pas=1):
+            # todo:docstring show_intervals
 
             indexNom1 = nomToIndex(self, name1)
             indexNom2 = nomToIndex(self, name2)
@@ -1776,18 +1808,17 @@ class Data:
         #############################################################################
         def findVars(self,
                      cars, vars: List[str] = [], varsEx: List[str] = [],
-                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = ''):
+                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = ''):
             """List of variables containing a string."""
             indexesVars = getIndexesVars(self, vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula)
             return findVars(self, cars, indexesVars)
 
-
         def contains(self,
                      chain, vars: List[str] = [], varsEx: List[str] = [],
                      names: List[str] = [], namesEx: List[str] = [],
-                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '',
-                     corpus:str = 'all', domain:str = 'all'):
+                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                     corpus: str = 'all', domain: str = 'all'):
             """Display names and variables whose value contains the given string."""
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1799,7 +1830,7 @@ class Data:
                           nom, cars,
                           vars: List[str] = [], varsEx: List[str] = [],
                           varsTypes: List[str] = [], varsTypesEx: List[str] = [],
-                          varsTypesFormula:str = ''):
+                          varsTypesFormula: str = ''):
             """List of variables for which the given name has the given value."""
 
             indexNom = nomToIndex(self, nom)
@@ -1808,9 +1839,9 @@ class Data:
             return findVarsValue(self,
                                  indexNom, cars, indexesVars)
 
-        def namesVarsValues(self, varsValues=[],variantes:List[str] = [], names: List[str] = [],
+        def namesVarsValues(self, varsValues=[], variantes: List[str] = [], names: List[str] = [],
                             namesEx: List[str] = [], namesTypes: List[str] = [], namesTypesEx: List[str] = [],
-                            namesTypesFormula:str = '',
+                            namesTypesFormula: str = '',
                             corpus='all'):
             """List of names with a given value on given variables varsValues=[[var1,value1],[var2,value2], etc.]."""
             vars = [vv[0] for vv in varsValues]
@@ -1822,7 +1853,8 @@ class Data:
         def namesVarsContainsValues(self,
                                     varsValues, variantes: List[str] = [],
                                     names: List[str] = [], namesEx: List[str] = [],
-                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = ''):
+                                    namesTypes: List[str] = [], namesTypesEx: List[str] = [],
+                                    namesTypesFormula: str = ''):
             """List of names containing a given value on given variables varsValues=[[var1,value1],[var2,value2], etc.]."""
             indexesNoms = getIndexesNoms(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula)
 
@@ -1832,7 +1864,8 @@ class Data:
         # Méthodes importée de quotations
         #############################################################################
         def vars_quotations(self, str, name, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', corpus:str = 'all', domain:str = 'all'):
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            corpus: str = 'all', domain: str = 'all'):
             """List of the variables of name with quotation."""
             indexNom = self.noms.index(name)
             indexes = getIndexes(self, [name], [], [], [], '',
@@ -1841,10 +1874,10 @@ class Data:
 
             return vars_quotations(self, str, indexNom, indexes['vars'])
 
-
         def vars_with_quotations(self, name, vars: List[str] = [], varsEx: List[str] = [],
-                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', domain:str = 'all'):
-            #todo : difference with previous one ?
+                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                 domain: str = 'all'):
+            # todo : difference with previous one ?
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, [name], [], [], [], '',
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1852,7 +1885,8 @@ class Data:
             return vars_with_quotations(self, indexNom, indexes['vars'])
 
         def show_with_quotations(self, name, vars: List[str] = [], varsEx: List[str] = [],
-                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', domain:str = 'all'):
+                                 varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                 domain: str = 'all'):
             """Display the variables of name with quotations."""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, [name], [], [], [], '',
@@ -1861,7 +1895,8 @@ class Data:
             show_with_quotations(self, indexNom, indexes['vars'])
 
         def show_without_quotations(self, name, vars: List[str] = [], varsEx: List[str] = [],
-                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', domain:str = 'all'):
+                                    varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                    domain: str = 'all'):
             """Display the variables of name without quotations."""
             indexNom = nomToIndex(self, name)
             indexes = getIndexes(self, [name], [], [], [], '',
@@ -1941,9 +1976,9 @@ class Data:
         def write_val(self, nom, var, value):
             write_val(self, nom, var, value)
 
-        def copy_vars(self, name1:str, name2:str, vars: List[str] = [], varsEx: List[str] = [],
-                       varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                       domain:str = 'all'):
+        def copy_vars(self, name1: str, name2: str, vars: List[str] = [], varsEx: List[str] = [],
+                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                      domain: str = 'all'):
             """Copy the values of the selected vars of name1 to those of name2."""
             indexNom1 = self.noms.index(name1)
             indexNom2 = self.noms.index(name2)
@@ -1952,45 +1987,46 @@ class Data:
                                  varsTypesFormula=varsTypesFormula,
                                  corpus='all', domain=domain)
 
-            show_data(self,[indexNom1,indexNom2],indexes['vars'])
-            answer = input("Copy the values of \"{}\" into \"{}\" ? (y/n) : ".format(name1,name2))
+            show_data(self, [indexNom1, indexNom2], indexes['vars'])
+            answer = input("Copy the values of \"{}\" into \"{}\" ? (y/n) : ".format(name1, name2))
             if answer in self.yes:
                 copy_vars(self, indexNom1, indexNom2, indexes['vars'])
                 print()
-                print(color.bold+'Copy done.'+color.end)
+                print(color.bold + 'Copy done.' + color.end)
                 print()
-                show_data(self, [indexNom1,indexNom2], indexes['vars'])
+                show_data(self, [indexNom1, indexNom2], indexes['vars'])
 
-
-        def complete_vars(self, name1:str, name2:str, vars: List[str] = [], varsEx: List[str] = [],
-                       varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                       domain:str = 'all'):
+        def complete_vars(self, name1: str, name2: str, vars: List[str] = [], varsEx: List[str] = [],
+                          varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                          domain: str = 'all'):
             """Complete the values of the selected vars without value of name1 with those of name2."""
             indexNom1 = self.noms.index(name1)
             indexNom2 = self.noms.index(name2)
             indexes = getIndexes(self, names=[], namesEx=[], namesTypes=[], namesTypesEx=[], namesTypesFormula='',
-                                 vars=self.vars_without_values(name1, vars=vars, varsEx=varsEx, varsTypes=varsTypes, varsTypesEx=varsTypesEx,
-                                 varsTypesFormula=varsTypesFormula),varsEx=[], varsTypes=[], varsTypesEx=[],
+                                 vars=self.vars_without_values(name1, vars=vars, varsEx=varsEx, varsTypes=varsTypes,
+                                                               varsTypesEx=varsTypesEx,
+                                                               varsTypesFormula=varsTypesFormula), varsEx=[],
+                                 varsTypes=[], varsTypesEx=[],
                                  varsTypesFormula='',
                                  corpus='all', domain=domain)
 
-            show_data(self,[indexNom2,indexNom1],indexes['vars'])
-            answer = input("Copy the values of \"{}\" into \"{}\" ? (y/n) : ".format(name2,name1))
+            show_data(self, [indexNom2, indexNom1], indexes['vars'])
+            answer = input("Copy the values of \"{}\" into \"{}\" ? (y/n) : ".format(name2, name1))
             if answer in self.yes:
                 copy_vars(self, indexNom2, indexNom1, indexes['vars'])
                 print()
-                print(color.bold+'Copy done.'+color.end)
+                print(color.bold + 'Copy done.' + color.end)
                 print()
-                show_data(self, [indexNom2,indexNom1], indexes['vars'])
+                show_data(self, [indexNom2, indexNom1], indexes['vars'])
 
-        def replace_value(self,value:str ='', newValue:str='',
-                           names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
-                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                      namesTypes: List[str] = [], namesTypesEx:List[str] = [], namesTypesFormula:str = '',
-                      pasColonne:int = 5, pasLigne:int = 5,
-                      domain: str = 'all', corpus: str = 'all',
-                      values: bool = True, citations: bool = False, width: str = '',
-                      decoration:bool = True):
+        def replace_value(self, value: str = '', newValue: str = '',
+                          names: List[str] = [], namesEx: List[str] = [], vars: List[str] = [], varsEx: List[str] = [],
+                          varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                          namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                          pasColonne: int = 5, pasLigne: int = 5,
+                          domain: str = 'all', corpus: str = 'all',
+                          values: bool = True, citations: bool = False, width: str = '',
+                          decoration: bool = True):
             """Replace value by newValue in the selected vars of the selected names ."""
             if not value:
                 print(color.bold + 'A value must be given.' + color.end)
@@ -2003,20 +2039,17 @@ class Data:
             show_data(self, indexes['noms'], indexes['vars'],
                       pasColonne=pasColonne, pasLigne=pasLigne,
                       values=values, citations=citations, width=width, decoration=False,
-                      replaceValues=[[value,value+'->'+newValue]])
+                      replaceValues=[[value, value + '->' + newValue]])
 
+            answer = input("Replace all the  \"{}\" by \"{}\" ? (y/N) : ".format(value, newValue))
 
-            answer = input("Replace all the  \"{}\" by \"{}\" ? (y/N) : ".format(value,newValue))
-
-            if answer in self.yes :
+            if answer in self.yes:
                 replace_value(self, value, newValue, indexes['noms'], indexes['vars'])
                 show_data(self, indexes['noms'], indexes['vars'],
                           pasColonne=pasColonne, pasLigne=pasLigne,
                           values=values, citations=citations, width=width, decoration=decoration)
             else:
                 print(color.bold + 'Aborted.' + color.end)
-
-
 
         def write_quotation(self, name, var, quotation):
             write_citation(self, name, var, quotation)
@@ -2033,9 +2066,9 @@ class Data:
         def write_name_type_val(self, type, nom, value):
             write_name_type_val(self, type=type, nom=nom, value=value)
 
-        def write_vars(self, name:str, value: str = '', vars: List[str] = [], varsEx: List[str] = [],
-                       varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '',
-                       domain:str = 'all'):
+        def write_vars(self, name: str, value: str = '', vars: List[str] = [], varsEx: List[str] = [],
+                       varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                       domain: str = 'all'):
             """Register the values of name on the selected variables."""
             if not name in self.noms:
                 name = nomsExtUnique(self, name)
@@ -2045,49 +2078,53 @@ class Data:
 
             indexNom = self.noms.index(name)
             indexes = getIndexes(self, names=[name], namesEx=[], namesTypes=[], namesTypesEx=[], namesTypesFormula='',
-                                 vars=vars, varsEx=varsEx, varsTypes=varsTypes, varsTypesEx=varsTypesEx, varsTypesFormula=varsTypesFormula,
+                                 vars=vars, varsEx=varsEx, varsTypes=varsTypes, varsTypesEx=varsTypesEx,
+                                 varsTypesFormula=varsTypesFormula,
                                  corpus='all', domain=domain)
             indexesVars = indexes['vars']
-            show_data(self,[indexNom],indexesVars)
+            show_data(self, [indexNom], indexesVars)
             if indexesVars:
                 if value:
                     answer = input("Set the value of this variables to \"{}\" ? (y/n) : ".format(value))
-                if answer in self.yes or value == '' :
+                if answer in self.yes or value == '':
                     write_vars(self, indexNom, indexesVars, value)
                     show_data(self, [indexNom], indexesVars)
             else:
-                print(color.bold+'No variable to be set.'+color.end)
+                print(color.bold + 'No variable to be set.' + color.end)
 
-        def write_names(self, vars: List[str] = [], varsEx: List[str] = [], varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', domain:str = 'all',
-                        names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '', corpus:str = 'all'):
+        def write_names(self, vars: List[str] = [], varsEx: List[str] = [], varsTypes: List[str] = [],
+                        varsTypesEx: List[str] = [], varsTypesFormula: str = '', domain: str = 'all',
+                        names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [],
+                        namesTypesEx: List[str] = [], namesTypesFormula: str = '', corpus: str = 'all'):
             """Register the values of the selected names on the selected variables."""
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
                                  corpus, domain)
-            write_names(self,indexes['noms'],indexes['vars'])
+            write_names(self, indexes['noms'], indexes['vars'])
 
-        def write_names_value(self,value:str, var: str,
-                        names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [], namesTypesEx: List[str] = [],
-                        namesTypesFormula:str = '', corpus='all'):
+        def write_names_value(self, value: str, var: str,
+                              names: List[str] = [], namesEx: List[str] = [], namesTypes: List[str] = [],
+                              namesTypesEx: List[str] = [],
+                              namesTypesFormula: str = '', corpus='all'):
             """Assign the given value to the selected variable of all selected names."""
             indexVar = varToIndex(self, var)
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars=[var], varsEx=[], varsTypes=[], varsTypesEx=[], varsTypesFormula=[],
                                  corpus=corpus, domain='all')
-            indexesNoms =  indexes['noms']
+            indexesNoms = indexes['noms']
             show_data(self, indexesNoms, [indexVar])
             if indexVar and indexesNoms and value:
-                answer = input("Set the value of the variable \"" + str(var) + "\" to \"" + str(value) + "\" for all this names ? (y/n) : ")
+                answer = input("Set the value of the variable \"" + str(var) + "\" to \"" + str(
+                    value) + "\" for all this names ? (y/n) : ")
                 if answer in self.yes:
                     write_names_value(self, value, indexVar, indexesNoms)
                     show_data(self, indexesNoms, [indexVar])
             else:
                 print(color.bold + 'No change.' + color.end)
 
-
-
         def write_type_vars(self, varsType, vars: List[str] = [], varsEx: List[str] = [],
-                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula:str = '', domain:str = 'all'):
+                            varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                            domain: str = 'all'):
             write_type_vars(self, varsType, vars=vars, varSauf=varsEx,
                             varsTypes=varsTypes, varsTypeSauf=varsTypesEx, varsTypesFormule=varsTypesFormula,
                             domaine=domain)
@@ -2101,16 +2138,16 @@ class Data:
             write_nom_types(self, name, namesTypes=namesTypes, namesTypesEx=namesTypesEx)
 
         def write_type_names(self, nomsType, names: List[str] = [], namesEx: List[str] = [],
-                             namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula:str = '', corpus:str = 'all'):
+                             namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                             corpus: str = 'all'):
             write_type_names(self, nomsType, names=names, namesEx=namesEx,
                              namesTypes=namesTypes, namesTypesEx=namesTypesEx, namesTypesFormula=namesTypesFormula,
                              corpus=corpus)
 
         def write_name_thamous(self, name, id, table, project=''):
-            #remove the 't' at the beginning of table.
+            # remove the 't' at the beginning of table.
             if table[0] == 't': table = table[1:]
             write_name_thamous(self, name, id, table, project)
-
 
         def drop_col_db(self, table, col):
             drop_col_db(self, table, col)
@@ -2131,4 +2168,3 @@ class Data:
         print(e)
     except:
         print(e)
-

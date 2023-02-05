@@ -42,7 +42,6 @@ js = '''
 </style>
 <script>
 
-
 function escapeHtml(unsafe) {
     return unsafe
          .replace(/&/g, "&amp;")
