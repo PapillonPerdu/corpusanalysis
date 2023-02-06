@@ -202,7 +202,7 @@ def show_decomposition(self,
                        indexNom, indexesNoms, indexesVars,
                        indexesNomsBaseIncomplete,
                        variantes=[],
-                       max=0, percent=100, Percent=100,
+                       max=0, percent=0, Percent=100,
                        pasColonne=10, pasLigne=10, decoration=True):
     if indexNom in indexesNoms: indexesNoms.remove(indexNom)
     if max == 0:
@@ -215,8 +215,8 @@ def show_decomposition(self,
                               indexesVars,
                               indexesNoms,
                               max,
-                              percent,
-                              Percent,
+                              0,
+                              100,
                               variantes=variantes)
     #decomp list of the complements of infexesNomsBaseIncomplete
     #prcs : percentages of completion corresponding to decomp
@@ -268,7 +268,7 @@ def show_decomposition_types(self,
                              indexesNomsBaseIncomplete,
                              indexesVarsTypesOutput,
                              variantes=[],
-                             max=0, percent=100, Percent=100,
+                             max=0, percent=0, Percent=100,
                              effectifType: int = 0, EffectifType=float('inf'),
                              pasColonne=10, pasLigne=10, decoration=True):
     if indexNom in indexesNoms: indexesNoms.remove(indexNom)
@@ -284,48 +284,52 @@ def show_decomposition_types(self,
                               indexesVars,
                               indexesNoms,
                               max,
-                              percent,
-                              Percent,
+                              0,
+                              100,
                               variantes=variantes)
     prcs, decomp = resDecomp
 
     resVars = ['%'] + [self.vars_augmented[i] for i in indexesVars]
     print('Variables : ', str(len(resVars)))
+    print('')
 
-    selectedNameLine = [''] + [self.data[indexNom][j] for j in indexesVars]
     if not len(decomp) == 0:
         for d in range(len(decomp)):
-            lines=[]
             indexesN = decomp[d]
             indexesNamesComplet = sorted(indexesNomsBaseIncomplete + indexesN)
             prcTotal = prcs[d]
-            print(color.bold + str(prcTotal) + "% : " + ', '.join(
-                [self.noms[i] for i in indexesNamesComplet]) + color.end)
+            if percent <= prcTotal <= Percent:
+                print(color.bold + str(prcTotal) + "% : " + ', '.join(
+                    [self.noms[i] for i in indexesNamesComplet]) + color.end)
 
-            lisetComplet = sum_set(self, indexesNamesComplet, indexesVars)
+                # liste effectif total et effectifs de chaque type
+                effectifsTps = effectifsTypes(self, [indexNom], indexesVars, indexesVarsTypesOutput)
+                effectifTotal = effectifsTps.pop(0)
+                #Restriction of indexesVarsTypesOutput according to the condition on effectifs
 
-            # liset des valeurs où les variables sont différentes
-            lisetSum = sum_liset(liset(l), lisetComplet, indexesVars)
-
-            # liste effectif total et effectifs de chaque type
-            effectifsTps = effectifsTypes(self, [indexNom], indexesVars, indexesVarsTypesOutput)
-            total = effectifsTps.pop(0)
-            # liste effects où indexNom est égale à un des noms de indexesNamesComplet
-            effectifsTpsCommons = effectifs_vars_common_types(self, indexNom, indexesNamesComplet, indexesVars, indexesVarsTypesOutput)
-            lines=tableau_correlations_types(self,
-                                             indexNom, indexesNamesComplet, indexesVars,
-                                             indexesVarsTypesOutput,
-                                             variantes=variantes,
-                                             effectif=0, Effectif=float('inf'),
-                                             percent=percent, Percent=Percent,
-                                             effectifType=effectifType, EffectifType=EffectifType)
-            lines=[[str(line[1])+'%']+line[2:] for line in lines]
-            lines.insert(0, [str(prcTotal)+'%', '', '']+effectifsTpsCommons)
-            lines.insert(0, ['', '', '']+effectifsTps)
-            columns = ['%', 'Total', 'Common'] + [self.vars_types_types[t] for t in indexesVarsTypesOutput]
-            index = ['Effectifs', nom]+[self.noms[n] for n in indexesNamesComplet]
-            printLines(lines, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
-
+                # liste effects où indexNom est égale à un des noms de indexesNamesComplet
+                effectifsTpsCommon = effectifs_vars_common_types(self, indexNom, indexesNamesComplet,
+                                                                  indexesVars, indexesVarsTypesOutput)
+                effectifsTpsRed = []
+                indexesVarsTypesOutputRed = []
+                effectifsTpsCommonRed = []
+                for i in range(len(effectifsTps)):
+                    if effectifType <= effectifsTps[i] <= EffectifType:
+                        effectifsTpsRed.append(effectifsTps[i])
+                        indexesVarsTypesOutputRed.append(indexesVarsTypesOutput[i])
+                        effectifsTpsCommonRed.append(effectifsTpsCommon[i])
+                lines=tableau_correlations_types(self,
+                                                 indexNom, indexesNamesComplet, indexesVars,
+                                                 indexesVarsTypesOutputRed,
+                                                 variantes=variantes,
+                                                 effectif=0, Effectif=float('inf'),
+                                                 effectifType=effectifType, EffectifType=EffectifType)
+                lines=[[str(line[1])+'%']+line[2:] for line in lines]
+                lines.insert(0, [str(prcTotal)+'%', '', '']+effectifsTpsCommonRed)
+                lines.insert(0, ['',effectifTotal, '']+effectifsTpsRed)
+                columns = ['%', 'Total', 'Common'] + [self.vars_types_types[t] for t in indexesVarsTypesOutputRed]
+                index = ['Effectifs', nom]+[self.noms[n] for n in indexesNamesComplet]
+                printLines(lines, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
     else:
         print('Aucune décomposition.')
 
@@ -334,7 +338,7 @@ def show_decomposition_types_percent(self,
                              indexesNomsBaseIncomplete,
                              indexesVarsTypesOutput,
                              variantes=[],
-                             max=0, percent=100, Percent=100,
+                             max: int = 0, percent : int =0, Percent : int = 100,
                              effectifType: int = 0, EffectifType=float('inf'),
                             percenType:int = 0, PercenType:int = 100,
                              pasColonne=10, pasLigne=10, decoration=True):
@@ -351,8 +355,8 @@ def show_decomposition_types_percent(self,
                               indexesVars,
                               indexesNoms,
                               max,
-                              percent,
-                              Percent,
+                              0,
+                              100,
                               variantes=variantes)
     prcs, decomp = resDecomp
 
@@ -360,41 +364,44 @@ def show_decomposition_types_percent(self,
     print('Variables : ', str(len(resVars)))
     print('')
 
-    selectedNameLine = [''] + [self.data[indexNom][j] for j in indexesVars]
     if not len(decomp) == 0:
         for d in range(len(decomp)):
-            lines=[]
             indexesN = decomp[d]
             indexesNamesComplet = sorted(indexesNomsBaseIncomplete + indexesN)
             prcTotal = prcs[d]
-            print(color.bold + str(prcTotal) + "% : " + ', '.join(
-                [self.noms[i] for i in indexesNamesComplet]) + color.end)
+            if percent <= prcTotal <= Percent:
+                print(color.bold + str(prcTotal) + "% : " + ', '.join(
+                    [self.noms[i] for i in indexesNamesComplet]) + color.end)
 
-            lisetComplet = sum_set(self, indexesNamesComplet, indexesVars)
 
-            # liset des valeurs où les variables sont différentes
-            lisetSum = sum_liset(liset(l), lisetComplet, indexesVars)
+                # liste effectif total et effectifs de chaque type
+                effectifsTps = effectifsTypes(self, [indexNom], indexesVars, indexesVarsTypesOutput)
+                effectifTotal = effectifsTps.pop(0)
+                # liste effects où indexNom est égale à un des noms de indexesNamesComplet
+                prcsTpsCommon = percents_vars_common_types(self, indexNom, indexesNamesComplet, indexesVars, indexesVarsTypesOutput)
+                effectifsTpsRed = []
+                indexesVarsTypesOutputRed = []
+                prcsTpsCommonRed = []
+                for i in range(len(effectifsTps)):
+                    if effectifType <= effectifsTps[i] <= EffectifType and \
+                            percenType <= prcsTpsCommon[i] <= PercenType:
+                        effectifsTpsRed.append(effectifsTps[i])
+                        indexesVarsTypesOutputRed.append(indexesVarsTypesOutput[i])
+                        prcsTpsCommonRed.append(prcsTpsCommon[i])
 
-            # liste effectif total et effectifs de chaque type
-            effectifsTps = effectifsTypes(self, [indexNom], indexesVars, indexesVarsTypesOutput)
-            #total = effectifsTps.pop(0)
-            # liste effects où indexNom est égale à un des noms de indexesNamesComplet
-            prcsTpsCommons = percents_vars_common_types(self, indexNom, indexesNamesComplet, indexesVars, indexesVarsTypesOutput)
-            lines=tableau_correlations_types_percent(self,
-                                             indexNom, indexesNamesComplet, indexesVars,
-                                             indexesVarsTypesOutput,
-                                             variantes=variantes,
-                                             effectif=0, Effectif=float('inf'),
-                                             percent=percent, Percent=Percent,
-                                             effectifType=effectifType, EffectifType=EffectifType)
-            for i in range(len(lines)):
-                lines[i]=[str(lines[i][1])+'%',lines[i][2]]+[str(p)+'%' for p in lines[i][3:]]
-            lines.insert(0, [str(prcTotal)+'%',str(len(indexesVars))]+[str(p)+'%' for p in prcsTpsCommons])
-            lines.insert(0, ['']+effectifsTps)
-            columns = ['%', 'Total'] + [self.vars_types_types[t] for t in indexesVarsTypesOutput]
-            columns = ['%', 'Effectifs'] + [self.vars_types_types[t] for t in indexesVarsTypesOutput]
-            index = ['Effectifs', nom]+[self.noms[n] for n in indexesNamesComplet]
-            printLines(lines, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
+                lines=tableau_correlations_types_percent(self,
+                                                 indexNom, indexesNamesComplet, indexesVars,
+                                                 indexesVarsTypesOutputRed,
+                                                 variantes=variantes,
+                                                 effectif=0, Effectif=float('inf'),
+                                                 effectifType=effectifType, EffectifType=EffectifType)
+                for i in range(len(lines)):
+                    lines[i]=[str(lines[i][1])+'%',lines[i][2]]+[str(p)+'%' for p in lines[i][3:]]
+                lines.insert(0, [str(prcTotal) + '%', ''] + [str(p)+'%' for p in prcsTpsCommonRed])
+                lines.insert(0, ['', effectifTotal] + effectifsTpsRed)
+                columns = ['%', 'Effectifs'] + [self.vars_types_types[t] for t in indexesVarsTypesOutputRed]
+                index = ['Effectifs', nom]+[self.noms[n] for n in indexesNamesComplet]
+                printLines(lines, columns=columns, index=index, pasColonne=pasColonne, pasLigne=pasLigne)
 
     else:
         print('Aucune décomposition.')
