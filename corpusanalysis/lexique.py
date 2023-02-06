@@ -138,7 +138,7 @@ def orbitesReduction(orbites, mots, motSauf, min, max):
                 # print('     ',debut,'-',fin)
                 if not subIntervalles([indexesVars[debut], indexesVars[fin]], intervalles):
                     indexesVarsSub = indexesVars[debut:fin + 1]
-                    val = self.listsEqualPourcent(L1, L2, indexesVarsSub)
+                    val = self.listsEqualPercent(L1, L2, indexesVarsSub)
 
                     if val >= pourcent:
                         intervalles.append([indexesVars[debut], indexesVars[fin]])
@@ -186,7 +186,7 @@ def orbitesReduction(orbites, mots, motSauf, min, max):
         L2 = self.__data[indexNom2]
 
         def fun(xList, yList, L1, L2, indexesVars):
-            res = [self.listsEqualPourcent(L1, L2, indexesVars[x:y + 1]) for x, y in zip(xList, yList)]
+            res = [self.listsEqualPercent(L1, L2, indexesVars[x:y + 1]) for x, y in zip(xList, yList)]
 
             return res
 

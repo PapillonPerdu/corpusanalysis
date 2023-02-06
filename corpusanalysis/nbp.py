@@ -1336,6 +1336,96 @@ class Data:
                                max=max, percent=percent, Percent=Percent,
                                pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
 
+
+        def show_decomposition_types(self,
+                                     nom,
+                                     namesIncompleteBasis=[], namesIncompleteBasisEx=[],
+                                     vars: List[str] = [], varsEx: List[str] = [],
+                                     names: List[str] = [], namesEx: List[str] = [],
+                                     max: int = 0, percent: int = 0, Percent: int = 100,
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                     effectifType : int = 0, EffectifType : float =float('inf'),
+                                     varsTypesOutput: List[str] = [],varsTypesOutputEx: List[str] = [],
+                                     variantes: List[str] = [],
+                                     dir='',
+                                     corpus: str = 'all', domain='all',
+                                     pasColonne: int = 5, pasLigne: int = 5, decoration=True):
+            """Display the decomposition of the values of a name in relation to those of other names according to the percentages indicated."""
+            indexNom = nomToIndex(self, nom)
+            indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
+                                 vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                 corpus, domain)
+            if namesIncompleteBasis or namesIncompleteBasisEx:
+                indexesNomsBaseIncomplete = nomsToIndexesNoms(self, namesIncompleteBasis, namesIncompleteBasisEx)
+            else:
+                indexesNomsBaseIncomplete = []
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < indexNom]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > indexNom]
+            else:
+                indexesNoms = indexes['noms']
+
+            indexesVarsTypeOutputs = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
+
+            show_decomposition_types(self,
+                                     indexNom, indexesNoms, indexes['vars'],
+                                     indexesNomsBaseIncomplete,
+                                     indexesVarsTypeOutputs,
+                                     effectifType=effectifType, EffectifType=EffectifType,
+                                     variantes=variantes,
+                                     max=max, percent=percent, Percent=Percent,
+                                     pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
+
+
+        def show_decomposition_types_percent(self,
+                                     nom,
+                                     namesIncompleteBasis=[], namesIncompleteBasisEx=[],
+                                     vars: List[str] = [], varsEx: List[str] = [],
+                                     names: List[str] = [], namesEx: List[str] = [],
+                                     max: int = 0, percent: int = 0, Percent: int = 100,
+                                     varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                     namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                     effectifType : int = 0, EffectifType : float =float('inf'),
+                                     varsTypesOutput: List[str] = [],varsTypesOutputEx: List[str] = [],
+                                     percenType : int = 0, PercenType : int = 100,
+                                     variantes: List[str] = [],
+                                     dir='',
+                                     corpus: str = 'all', domain='all',
+                                     pasColonne: int = 5, pasLigne: int = 5, decoration=True):
+            """Display the decomposition of the values of a name in relation to those of other names according to the percentages indicated."""
+            indexNom = nomToIndex(self, nom)
+            indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
+                                 vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                 corpus, domain)
+            if namesIncompleteBasis or namesIncompleteBasisEx:
+                indexesNomsBaseIncomplete = nomsToIndexesNoms(self, namesIncompleteBasis, namesIncompleteBasisEx)
+            else:
+                indexesNomsBaseIncomplete = []
+
+            if dir == 'asc':
+                indexesNoms = [n for n in indexes['noms'] if n < indexNom]
+            elif dir == 'desc':
+                indexesNoms = [n for n in indexes['noms'] if n > indexNom]
+            else:
+                indexesNoms = indexes['noms']
+
+            indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
+
+            show_decomposition_types_percent(self,
+                                             indexNom, indexesNoms, indexes['vars'],
+                                             indexesNomsBaseIncomplete,
+                                             indexesVarsTypeSortie,
+                                             variantes=variantes,
+                                             max=max, percent=percent, Percent=Percent,
+                                             effectifType=effectifType, EffectifType=EffectifType,
+                                             percenType=percenType, PercenType=PercenType,
+                                             pasColonne=pasColonne, pasLigne=pasLigne, decoration=decoration)
+
+
+
         def show_values(self, names: List[str] = [], namesEx: List[str] = [],
                         vars: List[str] = [], varsEx: List[str] = [],
                         varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
@@ -1359,8 +1449,7 @@ class Data:
                                 dir='both',
                                 corpus: str = 'all', domain: str = 'all',
                                 percent: int = 0, Percent: int = 100):
-            """Display the names whitch values are included, to a certain percent, in those of namesGenerators"""
-            # todo:à revoir...
+            """Display the names which values are included, to a certain percent, in those of namesGenerators"""
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1396,54 +1485,9 @@ class Data:
                                       dir='both',
                                       corpus: str = 'all', domain: str = 'all',
                                       percent: int = 0, Percent: int = 100,
-                                      effectif: int = 0, Effectif: int = 0,
                                       effectifType: int = 0, EffectifType: float = float('inf'),
                                       varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
-            # todo:docstring
-
-            indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
-                                 vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
-                                 corpus, domain)
-
-            indexesGenerators = getIndexes(self, namesGenerators, namesGeneratorsEx, namesGeneratorsTypes,
-                                           namesGeneratorsTypesEx, namesGeneratorsTypesFormula,
-                                           vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
-                                           corpus, domain)
-
-            if dir == 'asc':
-                indexesNoms = [n for n in indexes['noms'] if n < min(indexesGenerators['noms'])]
-            elif dir == 'desc':
-                indexesNoms = [n for n in indexes['noms'] if n > max(indexesGenerators['noms'])]
-            else:
-                indexesNoms = indexes['noms']
-
-            #suppression des générateurs de la liste des noms possibles
-            indexesNoms=list(set(indexesNoms).difference(indexesGenerators['noms']))
-            indexesVarsTypeSortie = varsTypesToIndexesTypesExt(self, varsTypesOutput, varsTypesOutputEx)
-
-            show_names_included_types(self, indexesGenerators['noms'], indexesNoms,
-                                      indexes['vars'], indexesVarsTypeSortie,
-                                      percent=percent, Percent=Percent,
-                                      effectif=effectif, Effectif=Effectif,
-                                      effectifType=effectifType, EffectifType=EffectifType)
-
-        def show_names_included_types(self,
-                                      namesGenerators: List[str] = [], namesGeneratorsEx: List[str] = [],
-                                      namesGeneratorsTypes: List[str] = [], namesGeneratorsTypesEx: List[str] = [],
-                                      namesGeneratorsTypesFormula: List[str] = [],
-                                      vars: List[str] = [],
-                                      varsEx: List[str] = [],
-                                      names: List[str] = [], namesEx: List[str] = [],
-                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [],
-                                      varsTypesFormula: str = '',
-                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [],
-                                      namesTypesFormula: str = '',
-                                      dir='both',
-                                      corpus: str = 'all', domain: str = 'all',
-                                      percent: int = 0, Percent: int = 100,
-                                      effectifType: int = 0, EffectifType: float = float('inf'),
-                                      varsTypesOutput: List[str] = [], varsTypesOutputEx: List[str] = []):
-            # todo:docstring
+            """Display the names the percentage for each type of values which are included, to a certain percent, in those of namesGenerators"""
 
             indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
                                  vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
@@ -1540,19 +1584,19 @@ class Data:
                                       percent=percent, Percent=Percent)
 
         def show_vars_basis_first(self, varsIncompleteBasis=[],
-                                  vars: List[str] = [], varsEx: List[str] = [],
-                                  names: List[str] = [], namesEx: List[str] = [],
-                                  varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
-                                  namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
-                                  corpus='all', domain='all',
-                                  max: int = 0):
-            # todo:docstring
+                                      vars: List[str] = [], varsEx: List[str] = [],
+                                      names: List[str] = [], namesEx: List[str] = [],
+                                      varsTypes: List[str] = [], varsTypesEx: List[str] = [], varsTypesFormula: str = '',
+                                      namesTypes: List[str] = [], namesTypesEx: List[str] = [], namesTypesFormula: str = '',
+                                      corpus='all', domain='all',
+                                      max: int = 0):
+                # todo:docstring
 
-            indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
-                                 vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
-                                 corpus, domain)
-            show_vars_base_first(self, indexes['noms'], indexes['vars'], varsIncompleteBasis=varsIncompleteBasis,
-                                 max=max)
+                indexes = getIndexes(self, names, namesEx, namesTypes, namesTypesEx, namesTypesFormula,
+                                     vars, varsEx, varsTypes, varsTypesEx, varsTypesFormula,
+                                     corpus, domain)
+                show_vars_base_first(self, indexes['noms'], indexes['vars'], varsIncompleteBasis=varsIncompleteBasis,
+                                     max=max)
 
         def show_vars_basis(self, varsIncompleteBasis=[],
                             vars: List[str] = [], varsEx: List[str] = [],

@@ -101,7 +101,7 @@ def listsEqual(L1, L2, indexesVars, variantes=None, precision=100):
 
 
 # Pourcentage d'égalité de deux listes sur une liste de variables
-def listsEqualPourcent(L1, L2, indexesVars,variantes=[]):
+def listsEqualPercent(L1, L2, indexesVars, variantes=[]):
     sum = 0
     for i in indexesVars:
         if (strEqual(L1[i], L2[i], variantes)): sum += 1
@@ -113,7 +113,7 @@ def listsEqualPourcent(L1, L2, indexesVars,variantes=[]):
 
 # fait la somme d'une liste de listes et et retourne le pourcentage d'égalité
 # avec une liste donnée
-def sumEqualPourcent(ListeL, L, indexesVars,variantes=None):
+def sumEqualPercent(ListeL, L, indexesVars, variantes=None):
     if variantes is None:
         variantes = []
     sum = 0

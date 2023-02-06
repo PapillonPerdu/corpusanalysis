@@ -92,6 +92,39 @@ def tableau_correlations(self,
     cor_sorted = sorted(cor, key=itemgetter(1), reverse=True)
     return cor_sorted
 
+def vars_common_types(self, indexNom,indexesNoms,indexesVars, indexesTypes):
+    # liste de la liste des indexes de variables pour lesquelles indexNom est égale à
+    # un nom de indexesNoms pour chaque type de indexesTypes
+    l=[]
+    for tp in indexesTypes :
+        vars_common = vars_relative_sum(self, indexNom, indexesNoms, indexesVarsSubType(self, indexesVars, tp))
+        l.append(vars_common)
+
+    return l
+
+
+def effectifs_vars_common_types(self, indexNom,indexesNoms,indexesVars, indexesTypes):
+    # liste du nombre de variables pour lesquelles indexNom est égale à
+    # un nom de indexesNoms pour chaque type de indexesTypes
+    l=[]
+    for tp in indexesTypes :
+        eff_common = len(vars_relative_sum(self, indexNom, indexesNoms, indexesVarsSubType(self, indexesVars, tp)))
+        l.append(eff_common)
+
+    return l
+
+def percents_vars_common_types(self, indexNom,indexesNoms,indexesVars, indexesTypes):
+    # liste du pourcentage de variables pour lesquelles indexNom est égale à
+    # un nom de indexesNoms pour chaque type de indexesTypes
+    l=[]
+    for tp in indexesTypes :
+        indexesVarsSub = indexesVarsSubType(self, indexesVars, tp)
+        total = len(indexesVarsSub)
+        prc_common = round(len(vars_relative_sum(self, indexNom, indexesNoms, indexesVarsSub))/total*100)
+        l.append(prc_common)
+
+    return l
+
 def indexesVars_discrimine(self,
                     indexNom, discrimines, indexesVars,
                     variantes=[]):
@@ -299,7 +332,8 @@ def show_compare_types_percent(self,
 # les corrélations sont déterminées à partir des variables
 # les types servent à la présentation des résultats
 def tableau_correlations_types_percent(self,
-                                       indexNom, indexesNoms, indexesVars, indexesVarsTypeSortie,
+                                       indexNom, indexesNoms, indexesVars,
+                                       indexesVarsTypeSortie,
                                        variantes=[],
                                        effectif=0, Effectif=float('inf'),
                                        effectifType=0, EffectifType=float('inf'),
@@ -472,7 +506,7 @@ def plot_intervals(self, indexNom1, indexNom2, indexesVars, longueur,variantes=[
     L2 = self.data[indexNom2]
 
     def fun(xList, yList, L1, L2, indexesVars):
-        res = [listsEqualPourcent(L1, L2, indexesVars[x:y + 1],variantes=variantes) for x, y in zip(xList, yList)]
+        res = [listsEqualPercent(L1, L2, indexesVars[x:y + 1], variantes=variantes) for x, y in zip(xList, yList)]
 
         return res
 

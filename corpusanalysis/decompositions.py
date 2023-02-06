@@ -14,7 +14,7 @@ def decomposition(self,
         if not includes(indexes, decomp):
             # print('indexes : ',indexesNoms)
             ListeL = [self.data[i] for i in indexes + indexesNomsBaseIncomplete]
-            prc = self.sumEqualPourcent(ListeL, self.data[indexNom], indexesVars)
+            prc = self.sumEqualPercent(ListeL, self.data[indexNom], indexesVars)
             if pourcent <= prc <= Pourcent:
                 prcs.append(prc)
                 decomp.append(indexes)
@@ -93,7 +93,7 @@ def show_decomposition(self,
             # Ajout des indexes des noms de la base incomplète
             indexesComplet = sorted(indexesNomsBaseIncomplete + indexes)
             for i in indexesComplet:
-                prc = listsEqualPourcent(self,self.data[indexNom], self.data[i], indexesVars)
+                prc = listsEqualPercent(self, self.data[indexNom], self.data[i], indexesVars)
                 ligne = [prc]
                 for j in indexesVars:
                     if self.strEqual(self.data[i][j], self.data[indexNom][j]):

@@ -20,7 +20,7 @@ def optimise_intervalles(self, indexNom1, indexNom2, indexesVars, pourcent, long
             # print('     ',debut,'-',fin)
             if not subIntervalles([indexesVars[debut], indexesVars[fin]], intervalles):
                 indexesVarsSub = indexesVars[debut:fin + 1]
-                val = listsEqualPourcent(L1, L2, indexesVarsSub)
+                val = listsEqualPercent(L1, L2, indexesVarsSub)
 
                 if val >= pourcent:
                     intervalles.append([indexesVars[debut], indexesVars[fin]])

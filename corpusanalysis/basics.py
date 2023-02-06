@@ -1406,6 +1406,12 @@ def indexesVarsToDictTypesVars(self, indexesVars):
             types[tp].append(self.vars[v])
     return types
 
+# Sous liste d'indexesVars du type considéré
+def indexesVarsSubType(self, indexesVars,indexType):
+    indexesVarsSub = list(set(indexVarsTypeToIndexesVars(self,indexType)).intersection(indexesVars))
+    return indexesVarsSub
+
+
     # indexes des variables pour lesquelles une liset a des valeurs
 
 def lisetToIndexesVars(self, liset, indexesVars):
